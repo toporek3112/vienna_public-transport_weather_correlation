@@ -68,6 +68,19 @@ services:
       - '--path.rootfs=/host'
     restart: unless-stopped
 
+  exporter_postgres:
+    image: quay.io/prometheuscommunity/postgres-exporter
+    container_name: dsi_exporter_postgres
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.10
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:postgres@dsi_postgres:5432/?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      - postgres
+
   exporter_jmx:
     image: bitnami/jmx-exporter:latest
     container_name: dsi_exporter_jmx
