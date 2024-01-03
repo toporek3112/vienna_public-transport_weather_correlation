@@ -1,0 +1,136 @@
+version: '3'
+
+services:
+  
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: postgres
+      GF_SECURITY_ADMIN_PASSWORD: postgres
+      GF_PROVISIONING_PATH: /etc/grafana/provisioning
+    networks:
+      custom_bridge:
+        ipv4_address: 172.20.0.3
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    networks:
+      custom_bridge:
+        ipv4_address: 172.20.0.4
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    restart: unless-stopped
+
+  exporter_node:
+    image: prom/node-exporter
+    container_name: exporter_node
+    pid: "host"
+    networks:
+      custom_bridge:
+        ipv4_address: 172.20.0.5
+    volumes:
+      - "/:/host:ro,rslave"
+    command:
+      - '--path.rootfs=/host'
+    restart: unless-stopped
+
+  exporter_jmx:
+    image: bitnami/jmx-exporter:latest
+    container_name: exporter_jmx
+    networks:
+      custom_bridge:
+        ipv4_address: 172.20.0.7
+    ports:
+      - "5556:5556"
+    volumes:
+      - ./jmx-exporter/jmx-exporter-config.yaml:/opt/bitnami/jmx-exporter/jmx-exporter-config.yaml
+      - ./jmx-exporter/logging.properties:/opt/bitnami/jmx-exporter/logging.properties
+    environment:
+      JMX_EXPORTER_CONFIG: /opt/bitnami/jmx-exporter/jmx-exporter-config.yaml
+    restart: unless-stopped
+
+  # exporter_jmx:
+  #   image: local/jmx-exporter:1.11
+  #   container_name: exporter_jmx
+  #   networks:
+  #     custom_bridge:
+  #       ipv4_address: 172.20.0.7
+  #   ports:
+  #     - "5556:5556"
+  #   command: >
+  #     /bin/sh -c "
+  #     echo 'Contents of JMX Exporter Configuration File:';
+  #     cat /config/jmx-exporter-config.yaml;
+  #     echo 'Starting JMX Exporter...';
+  #     java -Djava.util.logging.config.file=/config/logging.properties -jar /jmx_prometheus_httpserver.jar '5556' /config/jmx-exporter-config.yaml;
+  #     "
+  #   environment:
+  #     - JMX_URL=service:jmx:rmi:///jndi/rmi://kafka1:9099/jmxrmi
+  #   restart: unless-stopped
+  
+  kafka_00:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka_00
+    networks:
+      custom_bridge:
+        ipv4_address: 172.20.0.6
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+      - "9099:9099"
+    environment:
+      # Node settings
+      KAFKA_BROKER_ID: 0
+      KAFKA_NODE_ID: 0
+      # Listeneres
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+      KAFKA_LISTENERS: "CONTROLLER://kafka_00:9093,INTERNAL://kafka_00:9092"
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka_00:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "0@kafka_00:9093"
+      KAFKA_ENABLE_KRAFT: "true"
+      # Topics
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 2
+      KAFKA_NUM_PARTITIONS: 2
+      # Metrics
+      KAFKA_JMX_PORT: "9099"
+      KAFKA_JMX_HOSTNAME: "kafka_00"
+      KAFKA_JMX_OPTS: "-Djava.rmi.server.hostname=kafka_00 -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.rmi.port=9099"
+      # Rest
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_HEAP_OPTS: "-Xmx2g -Xms2g"
+      KAFKA_LOG_DIRS: "/var/lib/kafka/data"
+      CLUSTER_ID: n3KIrTWZSgCBNF1UZqvI8Q
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+volumes:
+  kafka-data:
+  grafana_data:
+
+networks:
+  custom_bridge:
+    external: true
