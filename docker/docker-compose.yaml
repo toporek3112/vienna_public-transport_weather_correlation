@@ -1,30 +1,47 @@
 version: '3'
 
 services:
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+    restart: always
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.2
   
   grafana:
     image: grafana/grafana:latest
-    container_name: grafana
+    container_name: dsi_grafana
     ports:
       - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: postgres
       GF_SECURITY_ADMIN_PASSWORD: postgres
       GF_PROVISIONING_PATH: /etc/grafana/provisioning
+      GF_DATABASE_TYPE: postgres
+      GF_DATABASE_HOST: dsi_postgres:5432
+      GF_DATABASE_USER: postgres
+      GF_DATABASE_PASSWORD: postgres
+      GF_DATABASE_NAME: grafana
     networks:
-      custom_bridge:
+      dsi_custom_bridge:
         ipv4_address: 172.20.0.3
     volumes:
-      - grafana_data:/var/lib/grafana
       - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
       - ./grafana/datasources:/etc/grafana/provisioning/datasources
     restart: unless-stopped
 
+
   prometheus:
     image: prom/prometheus:latest
-    container_name: prometheus
+    container_name: dsi_prometheus
     networks:
-      custom_bridge:
+      dsi_custom_bridge:
         ipv4_address: 172.20.0.4
     ports:
       - "9090:9090"
@@ -40,10 +57,10 @@ services:
 
   exporter_node:
     image: prom/node-exporter
-    container_name: exporter_node
+    container_name: dsi_exporter_node
     pid: "host"
     networks:
-      custom_bridge:
+      dsi_custom_bridge:
         ipv4_address: 172.20.0.5
     volumes:
       - "/:/host:ro,rslave"
@@ -53,9 +70,9 @@ services:
 
   exporter_jmx:
     image: bitnami/jmx-exporter:latest
-    container_name: exporter_jmx
+    container_name: dsi_exporter_jmx
     networks:
-      custom_bridge:
+      dsi_custom_bridge:
         ipv4_address: 172.20.0.7
     ports:
       - "5556:5556"
@@ -70,7 +87,7 @@ services:
   #   image: local/jmx-exporter:1.11
   #   container_name: exporter_jmx
   #   networks:
-  #     custom_bridge:
+  #     dsi_custom_bridge:
   #       ipv4_address: 172.20.0.7
   #   ports:
   #     - "5556:5556"
@@ -87,14 +104,16 @@ services:
   
   kafka_00:
     image: confluentinc/cp-kafka:latest
-    container_name: kafka_00
+    container_name: dsi_kafka_00
     networks:
-      custom_bridge:
+      dsi_custom_bridge:
         ipv4_address: 172.20.0.6
     ports:
       - "9092:9092"
       - "9093:9093"
       - "9099:9099"
+    volumes:
+      - dsi-kafka-data:/var/lib/kafka/data
     environment:
       # Node settings
       KAFKA_BROKER_ID: 0
@@ -124,13 +143,45 @@ services:
       KAFKA_HEAP_OPTS: "-Xmx2g -Xms2g"
       KAFKA_LOG_DIRS: "/var/lib/kafka/data"
       CLUSTER_ID: n3KIrTWZSgCBNF1UZqvI8Q
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:latest
+    container_name: dsi_postgres
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.8
+    ports:
+      - "5432:5432"
     volumes:
-      - kafka-data:/var/lib/kafka/data
+      - dsi-postgres-data:/var/lib/postgresql/data
+      - ./postgres:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:latest
+    container_name: dsi_mongo
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.9
+    ports:
+      - "27017:27017"
+    volumes:
+      - dsi-mongo-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: postgres
+      MONGO_INITDB_ROOT_PASSWORD: postgres
+    restart: unless-stopped
 
 volumes:
-  kafka-data:
-  grafana_data:
+  dsi-kafka-data:
+  dsi-postgres-data:
+  dsi-mongo-data:
 
 networks:
-  custom_bridge:
+  dsi_custom_bridge:
     external: true
