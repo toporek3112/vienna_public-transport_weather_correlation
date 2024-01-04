@@ -1,5 +1,8 @@
-import config from '../config.json' assert { type: 'json' };
 import fetch from 'node-fetch';
+import fs from 'fs'
+
+const data = fs.readFileSync('config.json', 'utf8');
+const config = JSON.parse(data);
 
 const apiKey = config.apiKey;
 const stock = process.env.STOCK
