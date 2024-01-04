@@ -131,3 +131,6 @@ dist
 
 # ignore prometheus data
 docker/prometheus/data
+config.json
+__init__.py
+__pycache__

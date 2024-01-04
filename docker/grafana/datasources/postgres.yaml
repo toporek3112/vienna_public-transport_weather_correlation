@@ -1,0 +1,20 @@
+apiVersion: 1
+
+datasources:
+  - name: Postgres-stocks
+    type: postgres
+    access: proxy
+    orgId: 1
+    url: dsi_postgres:5432
+    user: postgres
+    database: tmp
+    secureJsonData:
+      password: "postgres"
+    isDefault: false
+    version: 1
+    editable: true
+    jsonData:
+      sslMode: disable # Change to 'require' if SSL is needed
+      postgresVersion: 1200 # Set the version of your PostgreSQL
+      timescaledb: true # Set to true if you're using TimescaleDB
+

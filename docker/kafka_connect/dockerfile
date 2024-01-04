@@ -1,0 +1,6 @@
+FROM confluentinc/cp-kafka-connect:latest
+
+# Install the Confluent Hub client
+USER root
+RUN confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:latest
+USER root

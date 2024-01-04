@@ -8,6 +8,9 @@
 # Use OpenJDK 11 JDK base image
 FROM openjdk:11-jdk
 
+# Set the working directory
+WORKDIR /root
+
 # Install essential tools
 RUN apt-get update && apt-get install -y \
     net-tools \
@@ -17,10 +20,12 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Download jmxterm
-RUN curl -L -o /root/jmxterm-1.0.2-uber.jar https://github.com/jiaqi/jmxterm/releases/download/v1.0.2/jmxterm-1.0.2-uber.jar
+RUN curl -L -o ./jmxterm-1.0.2-uber.jar https://github.com/jiaqi/jmxterm/releases/download/v1.0.2/jmxterm-1.0.2-uber.jar
+RUN wget https://dlcdn.apache.org/kafka/3.6.1/kafka_2.13-3.6.1.tgz && tar -xzf kafka_2.13-3.6.1.tgz && rm kafka_2.13-3.6.1.tgz
 
-# Set the working directory
-WORKDIR /root
+# Set aliases
+RUN echo 'alias l="ls -lha"' >> .bashrc
+RUN echo 'alias ll="ls -lh"' >> .bashrc
 
 # By default, just run a shell. Users can execute Java tools or other commands as needed.
 CMD ["/bin/bash"]

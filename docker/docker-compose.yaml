@@ -2,6 +2,10 @@ version: '3'
 
 services:
 
+  #################################################
+  ############### Proxy (Optional) ################
+  #################################################
+
   nginx:
     image: nginx:latest
     container_name: nginx
@@ -13,6 +17,10 @@ services:
     networks:
       dsi_custom_bridge:
         ipv4_address: 172.20.0.2
+
+  #################################################
+  ################## Monitoring ###################
+  #################################################
   
   grafana:
     image: grafana/grafana:latest
@@ -35,7 +43,8 @@ services:
       - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
       - ./grafana/datasources:/etc/grafana/provisioning/datasources
     restart: unless-stopped
-
+    depends_on:
+      - postgres
 
   prometheus:
     image: prom/prometheus:latest
@@ -115,6 +124,10 @@ services:
   #     - JMX_URL=service:jmx:rmi:///jndi/rmi://kafka1:9099/jmxrmi
   #   restart: unless-stopped
   
+  #################################################
+  ##################### Kafka #####################
+  #################################################
+
   kafka_00:
     image: confluentinc/cp-kafka:latest
     container_name: dsi_kafka_00
@@ -135,28 +148,105 @@ services:
       ALLOW_PLAINTEXT_LISTENER: "yes"
       KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
       KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
-      KAFKA_LISTENERS: "CONTROLLER://kafka_00:9093,INTERNAL://kafka_00:9092"
-      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka_00:9092"
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT"
-      KAFKA_CONTROLLER_QUORUM_VOTERS: "0@kafka_00:9093"
+      KAFKA_LISTENERS: "CONTROLLER://dsi_kafka_00:9093,INTERNAL://dsi_kafka_00:9094,LOCALHOST://172.20.0.6:9092"
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://dsi_kafka_00:9094,LOCALHOST://172.20.0.6:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,LOCALHOST:PLAINTEXT"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "0@dsi_kafka_00:9093"
       KAFKA_ENABLE_KRAFT: "true"
       # Topics
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 2
-      KAFKA_NUM_PARTITIONS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_NUM_PARTITIONS: 1
       # Metrics
       KAFKA_JMX_PORT: "9099"
-      KAFKA_JMX_HOSTNAME: "kafka_00"
-      KAFKA_JMX_OPTS: "-Djava.rmi.server.hostname=kafka_00 -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.rmi.port=9099"
+      KAFKA_JMX_HOSTNAME: "dsi_kafka_00"
+      KAFKA_JMX_OPTS: "-Djava.rmi.server.hostname=dsi_kafka_00 -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.rmi.port=9099"
       # Rest
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_HEAP_OPTS: "-Xmx2g -Xms2g"
       KAFKA_LOG_DIRS: "/var/lib/kafka/data"
       CLUSTER_ID: n3KIrTWZSgCBNF1UZqvI8Q
     restart: unless-stopped
+
+  # kafka-connect:
+  #   build: kafka_connect/.
+  #   container_name: dsi_kafka_connect
+  #   depends_on:
+  #     - kafka_00 
+  #   networks:
+  #     - dsi_custom_bridge
+  #   ports:
+  #     - "8083:8083" 
+  #   environment:
+  #     GROUP_ID: 1
+  #     CONNECT_CONFIG_STORAGE_TOPIC: "connect-configs"
+  #     CONNECT_OFFSET_STORAGE_TOPIC: "connect-offsets"
+  #     CONNECT_STATUS_STORAGE_TOPIC: "connect-status"
+  #     CONFIG_STORAGE_REPLICATION_FACTOR: 1
+  #     OFFSET_STORAGE_REPLICATION_FACTOR: 1
+  #     STATUS_STORAGE_REPLICATION_FACTOR: 1
+  #     CONNECT_BOOTSTRAP_SERVERS: "dsi_kafka_00:9094"
+  #     CONNECT_REST_ADVERTISED_HOST_NAME: "kafka_connect"
+  #     CONNECT_REST_PORT: 8083
+  #     CONNECT_PLUGIN_PATH: "/usr/share/java"
+  #     CONNECT_GROUP_ID: n3KIrTWZSgCBNF1UZqvI8Q
+  #     CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+  #     CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+  #     KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
+
+  kafka_consumer:
+    build: 'node/.'
+    container_name: dsi_kafka_consumer
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.11
+    command: /bin/sh -c "sleep 30 && node index.js"
+    environment:
+      MODE: 'consumer'
+      KAFKA_HOST: 'dsi_kafka_00:9094'
+    restart: unless-stopped
+    depends_on:
+      - kafka_00
+      - kafka_producer_uber
+
+  kafka_producer_uber:
+    build: 'node/.'
+    container_name: dsi_kafka_producer_uber
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.12
+    command: /bin/sh -c "sleep 30 && node index.js"
+    environment:
+      MODE: 'producer'
+      KAFKA_HOST: 'dsi_kafka_00:9094'
+      STOCK: 'UBER'
+      DEV: true
+    restart: unless-stopped
+    depends_on:
+      - kafka_00
+
+  # kafka_producer_nflx:
+  #   build: 'node/.'
+  #   container_name: dsi_kafka_producer_nflx
+  #   networks:
+  #     dsi_custom_bridge:
+  #       ipv4_address: 172.20.0.13
+  #   command: /bin/sh -c "sleep 30 && node index.js"
+  #   environment:
+  #     MODE: 'producer'
+  #     KAFKA_HOST: 'dsi_kafka_00:9094'
+  #     STOCK: 'NFLX'
+  #     # DEV: true
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - kafka_00
+
+  #################################################
+  ################### Database ####################
+  #################################################
 
   postgres:
     image: postgres:latest
@@ -175,25 +265,25 @@ services:
       POSTGRES_PASSWORD: postgres
     restart: unless-stopped
 
-  mongo:
-    image: mongo:latest
-    container_name: dsi_mongo
-    networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.9
-    ports:
-      - "27017:27017"
-    volumes:
-      - dsi-mongo-data:/data/db
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: postgres
-      MONGO_INITDB_ROOT_PASSWORD: postgres
-    restart: unless-stopped
+  # mongo:
+  #   image: mongo:latest
+  #   container_name: dsi_mongo
+  #   networks:
+  #     dsi_custom_bridge:
+  #       ipv4_address: 172.20.0.9
+  #   ports:
+  #     - "27017:27017"
+  #   volumes:
+  #     - dsi-mongo-data:/data/db
+  #   environment:
+  #     MONGO_INITDB_ROOT_USERNAME: postgres
+  #     MONGO_INITDB_ROOT_PASSWORD: postgres
+  #   restart: unless-stopped
 
 volumes:
   dsi-kafka-data:
   dsi-postgres-data:
-  dsi-mongo-data:
+  # dsi-mongo-data:
 
 networks:
   dsi_custom_bridge:
