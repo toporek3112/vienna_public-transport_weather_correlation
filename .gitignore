@@ -134,3 +134,8 @@ docker/prometheus/data
 config.json
 __init__.py
 __pycache__
+
+# Spark
+.ipynb_checkpoints
+docker/spark/checkpoint/**
+docker/spark/test/**

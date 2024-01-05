@@ -212,21 +212,21 @@ services:
   #     - kafka_00
   #     - kafka_producer_uber
 
-  # kafka_producer_uber:
-  #   build: 'node/.'
-  #   container_name: dsi_kafka_producer_uber
-  #   networks:
-  #     dsi_custom_bridge:
-  #       ipv4_address: 172.20.0.12
-  #   command: /bin/sh -c "sleep 30 && node index.js"
-  #   environment:
-  #     MODE: 'producer'
-  #     KAFKA_HOST: 'dsi_kafka_00:9094'
-  #     STOCK: 'UBER'
-  #     DEV: 'true'
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - kafka_00
+  kafka_producer_uber:
+    build: 'node/.'
+    container_name: dsi_kafka_producer_uber
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.12
+    command: /bin/sh -c "sleep 30 && node index.js"
+    environment:
+      MODE: 'producer'
+      KAFKA_HOST: 'dsi_kafka_00:9094'
+      STOCK: 'UBER'
+      DEV: 'true'
+    restart: unless-stopped
+    depends_on:
+      - kafka_00
 
   # kafka_producer_nflx:
   #   build: 'node/.'
@@ -243,6 +243,25 @@ services:
   #   restart: unless-stopped
   #   depends_on:
   #     - kafka_00
+
+  #################################################
+  ################## Processing ###################
+  #################################################
+  
+  jupyter-spark:
+    build: spark/.
+    container_name: dsi_spark
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.14
+    ports:
+      - "8888:8888"
+      - "4040:4040"
+    volumes:
+      - ./spark:/home/jovyan/work
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    restart: unless-stopped
 
   #################################################
   ################### Database ####################
