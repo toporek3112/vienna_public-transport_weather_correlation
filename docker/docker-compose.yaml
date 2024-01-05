@@ -197,36 +197,36 @@ services:
   #     CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
   #     KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
 
-  kafka_consumer:
-    build: 'node/.'
-    container_name: dsi_kafka_consumer
-    networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.11
-    command: /bin/sh -c "sleep 30 && node index.js"
-    environment:
-      MODE: 'consumer'
-      KAFKA_HOST: 'dsi_kafka_00:9094'
-    restart: unless-stopped
-    depends_on:
-      - kafka_00
-      - kafka_producer_uber
+  # kafka_consumer:
+  #   build: 'node/.'
+  #   container_name: dsi_kafka_consumer
+  #   networks:
+  #     dsi_custom_bridge:
+  #       ipv4_address: 172.20.0.11
+  #   command: /bin/sh -c "sleep 30 && node index.js"
+  #   environment:
+  #     MODE: 'consumer'
+  #     KAFKA_HOST: 'dsi_kafka_00:9094'
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - kafka_00
+  #     - kafka_producer_uber
 
-  kafka_producer_uber:
-    build: 'node/.'
-    container_name: dsi_kafka_producer_uber
-    networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.12
-    command: /bin/sh -c "sleep 30 && node index.js"
-    environment:
-      MODE: 'producer'
-      KAFKA_HOST: 'dsi_kafka_00:9094'
-      STOCK: 'UBER'
-      DEV: 'true'
-    restart: unless-stopped
-    depends_on:
-      - kafka_00
+  # kafka_producer_uber:
+  #   build: 'node/.'
+  #   container_name: dsi_kafka_producer_uber
+  #   networks:
+  #     dsi_custom_bridge:
+  #       ipv4_address: 172.20.0.12
+  #   command: /bin/sh -c "sleep 30 && node index.js"
+  #   environment:
+  #     MODE: 'producer'
+  #     KAFKA_HOST: 'dsi_kafka_00:9094'
+  #     STOCK: 'UBER'
+  #     DEV: 'true'
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - kafka_00
 
   # kafka_producer_nflx:
   #   build: 'node/.'
