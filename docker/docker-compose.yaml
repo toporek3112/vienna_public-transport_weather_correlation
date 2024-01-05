@@ -6,17 +6,17 @@ services:
   ############### Proxy (Optional) ################
   #################################################
 
-  # nginx:
-  #   image: nginx:latest
-  #   container_name: nginx
-  #   ports:
-  #     - "80:80"
-  #   volumes:
-  #     - ./nginx:/etc/nginx/conf.d
-  #   restart: always
-  #   networks:
-  #     dsi_custom_bridge:
-  #       ipv4_address: 172.20.0.2
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+    restart: always
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.2
 
   #################################################
   ################## Monitoring ###################
@@ -64,18 +64,18 @@ services:
       - '--web.console.templates=/usr/share/prometheus/consoles'
     restart: unless-stopped
 
-  # exporter_node:
-  #   image: prom/node-exporter
-  #   container_name: dsi_exporter_node
-  #   pid: "host"
-  #   networks:
-  #     dsi_custom_bridge:
-  #       ipv4_address: 172.20.0.5
-  #   volumes:
-  #     - "/:/host:ro,rslave"
-  #   command:
-  #     - '--path.rootfs=/host'
-  #   restart: unless-stopped
+  exporter_node:
+    image: prom/node-exporter
+    container_name: dsi_exporter_node
+    pid: "host"
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.5
+    volumes:
+      - "/:/host:ro,rslave"
+    command:
+      - '--path.rootfs=/host'
+    restart: unless-stopped
 
   exporter_postgres:
     image: quay.io/prometheuscommunity/postgres-exporter
@@ -197,36 +197,36 @@ services:
   #     CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
   #     KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
 
-  kafka_consumer:
-    build: 'node/.'
-    container_name: dsi_kafka_consumer
-    networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.11
-    command: /bin/sh -c "sleep 30 && node index.js"
-    environment:
-      MODE: 'consumer'
-      KAFKA_HOST: 'dsi_kafka_00:9094'
-    restart: unless-stopped
-    depends_on:
-      - kafka_00
-      - kafka_producer_uber
+  # kafka_consumer:
+  #   build: 'node/.'
+  #   container_name: dsi_kafka_consumer
+  #   networks:
+  #     dsi_custom_bridge:
+  #       ipv4_address: 172.20.0.11
+  #   command: /bin/sh -c "sleep 30 && node index.js"
+  #   environment:
+  #     MODE: 'consumer'
+  #     KAFKA_HOST: 'dsi_kafka_00:9094'
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - kafka_00
+  #     - kafka_producer_uber
 
-  kafka_producer_uber:
-    build: 'node/.'
-    container_name: dsi_kafka_producer_uber
-    networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.12
-    command: /bin/sh -c "sleep 30 && node index.js"
-    environment:
-      MODE: 'producer'
-      KAFKA_HOST: 'dsi_kafka_00:9094'
-      STOCK: 'UBER'
-      DEV: 'true'
-    restart: unless-stopped
-    depends_on:
-      - kafka_00
+  # kafka_producer_uber:
+  #   build: 'node/.'
+  #   container_name: dsi_kafka_producer_uber
+  #   networks:
+  #     dsi_custom_bridge:
+  #       ipv4_address: 172.20.0.12
+  #   command: /bin/sh -c "sleep 30 && node index.js"
+  #   environment:
+  #     MODE: 'producer'
+  #     KAFKA_HOST: 'dsi_kafka_00:9094'
+  #     STOCK: 'UBER'
+  #     DEV: 'true'
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - kafka_00
 
   # kafka_producer_nflx:
   #   build: 'node/.'
