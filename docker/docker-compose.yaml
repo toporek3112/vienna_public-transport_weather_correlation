@@ -13,10 +13,10 @@ services:
       - "80:80"
     volumes:
       - ./nginx:/etc/nginx/conf.d
-    restart: always
     networks:
       dsi_custom_bridge:
         ipv4_address: 172.20.0.2
+    restart: unless-stopped
 
   #################################################
   ################## Monitoring ###################
@@ -75,7 +75,6 @@ services:
       - "/:/host:ro,rslave"
     command:
       - '--path.rootfs=/host'
-    restart: unless-stopped
 
   exporter_postgres:
     image: quay.io/prometheuscommunity/postgres-exporter
@@ -89,21 +88,22 @@ services:
       - "9187:9187"
     depends_on:
       - postgres
-
-  exporter_jmx:
-    image: bitnami/jmx-exporter:latest
-    container_name: dsi_exporter_jmx
-    networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.7
-    ports:
-      - "5556:5556"
-    volumes:
-      - ./jmx-exporter/jmx-exporter-config.yaml:/opt/bitnami/jmx-exporter/jmx-exporter-config.yaml
-      - ./jmx-exporter/logging.properties:/opt/bitnami/jmx-exporter/logging.properties
-    environment:
-      JMX_EXPORTER_CONFIG: /opt/bitnami/jmx-exporter/jmx-exporter-config.yaml
     restart: unless-stopped
+
+  # exporter_jmx:
+  #   image: bitnami/jmx-exporter:latest
+  #   container_name: dsi_exporter_jmx
+  #   networks:
+  #     dsi_custom_bridge:
+  #       ipv4_address: 172.20.0.7
+  #   ports:
+  #     - "5556:5556"
+  #   volumes:
+  #     - ./jmx-exporter/jmx-exporter-config.yaml:/opt/bitnami/jmx-exporter/jmx-exporter-config.yaml
+  #     - ./jmx-exporter/logging.properties:/opt/bitnami/jmx-exporter/logging.properties
+  #   environment:
+  #     JMX_EXPORTER_CONFIG: /opt/bitnami/jmx-exporter/jmx-exporter-config.yaml
+  #   restart: unless-stopped
 
   # exporter_jmx:
   #   image: local/jmx-exporter:1.11
@@ -212,21 +212,21 @@ services:
   #     - kafka_00
   #     - kafka_producer_uber
 
-  kafka_producer_uber:
-    build: 'node/.'
-    container_name: dsi_kafka_producer_uber
-    networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.12
-    command: /bin/sh -c "sleep 30 && node index.js"
-    environment:
-      MODE: 'producer'
-      KAFKA_HOST: 'dsi_kafka_00:9094'
-      STOCK: 'UBER'
-      DEV: 'true'
-    restart: unless-stopped
-    depends_on:
-      - kafka_00
+  # kafka_producer_uber:
+  #   build: 'node/.'
+  #   container_name: dsi_kafka_producer_uber
+  #   networks:
+  #     dsi_custom_bridge:
+  #       ipv4_address: 172.20.0.12
+  #   command: /bin/sh -c "sleep 30 && node index.js"
+  #   environment:
+  #     MODE: 'producer'
+  #     KAFKA_HOST: 'dsi_kafka_00:9094'
+  #     STOCK: 'UBER'
+  #     DEV: 'true'
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - kafka_00
 
   # kafka_producer_nflx:
   #   build: 'node/.'
