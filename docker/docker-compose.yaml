@@ -255,7 +255,7 @@ services:
       dsi_custom_bridge:
         ipv4_address: 172.20.0.14
     ports:
-      - "8888:8888"
+      - "8889:8888"
       - "4040:4040"
     volumes:
       - ./spark:/home/jovyan/work
