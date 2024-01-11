@@ -110,7 +110,7 @@ services:
       - "9093:9093"
       - "9099:9099"
     volumes:
-      - dsi-kafka-data:/var/lib/kafka/data
+      - dsi_kafka_data:/var/lib/kafka/data
     environment:
       # Node settings
       KAFKA_BROKER_ID: 0
@@ -141,6 +141,28 @@ services:
       KAFKA_LOG_DIRS: "/var/lib/kafka/data"
       CLUSTER_ID: n3KIrTWZSgCBNF1UZqvI8Q
     restart: unless-stopped
+
+  init_kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: dsi_init_kafka
+    depends_on:
+      - kafka_00
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.11
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      # blocks until kafka is reachable
+      kafka-topics --bootstrap-server dsi_kafka_00:9094 --list
+
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server dsi_kafka_00:9094 --create --if-not-exists --replication-factor 1 --partitions 1 --topic topic_interruptions
+      kafka-topics --bootstrap-server dsi_kafka_00:9094 --create --if-not-exists --replication-factor 1 --partitions 1 --topic topic_weather
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server dsi_kafka_00:9094 --list
+      "
 
   # kafka_consumer:
   #   build: 'node/.'
@@ -221,7 +243,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - dsi-postgres-data:/var/lib/postgresql/data
+      - dsi_postgres_data:/var/lib/postgresql/data
       - ./postgres:/docker-entrypoint-initdb.d
     environment:
       POSTGRES_DB: postgres
@@ -245,8 +267,8 @@ services:
   #   restart: unless-stopped
 
 volumes:
-  dsi-kafka-data:
-  dsi-postgres-data:
+  dsi_kafka_data:
+  dsi_postgres_data:
   # dsi-mongo-data:
 
 networks:
