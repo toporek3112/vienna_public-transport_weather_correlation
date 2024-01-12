@@ -3,22 +3,6 @@ version: '3'
 services:
 
   #################################################
-  ############### Proxy (Optional) ################
-  #################################################
-
-  nginx:
-    image: nginx:latest
-    container_name: nginx
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx:/etc/nginx/conf.d
-    networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.2
-    restart: unless-stopped
-
-  #################################################
   ################## Monitoring ###################
   #################################################
   
@@ -56,25 +40,12 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./prometheus/data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
     restart: unless-stopped
-
-  exporter_node:
-    image: prom/node-exporter
-    container_name: dsi_exporter_node
-    pid: "host"
-    networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.5
-    volumes:
-      - "/:/host:ro,rslave"
-    command:
-      - '--path.rootfs=/host'
 
   exporter_postgres:
     image: quay.io/prometheuscommunity/postgres-exporter
@@ -139,7 +110,7 @@ services:
       - "9093:9093"
       - "9099:9099"
     volumes:
-      - dsi-kafka-data:/var/lib/kafka/data
+      - dsi_kafka_data:/var/lib/kafka/data
     environment:
       # Node settings
       KAFKA_BROKER_ID: 0
@@ -171,31 +142,27 @@ services:
       CLUSTER_ID: n3KIrTWZSgCBNF1UZqvI8Q
     restart: unless-stopped
 
-  # kafka-connect:
-  #   build: kafka_connect/.
-  #   container_name: dsi_kafka_connect
-  #   depends_on:
-  #     - kafka_00 
-  #   networks:
-  #     - dsi_custom_bridge
-  #   ports:
-  #     - "8083:8083" 
-  #   environment:
-  #     GROUP_ID: 1
-  #     CONNECT_CONFIG_STORAGE_TOPIC: "connect-configs"
-  #     CONNECT_OFFSET_STORAGE_TOPIC: "connect-offsets"
-  #     CONNECT_STATUS_STORAGE_TOPIC: "connect-status"
-  #     CONFIG_STORAGE_REPLICATION_FACTOR: 1
-  #     OFFSET_STORAGE_REPLICATION_FACTOR: 1
-  #     STATUS_STORAGE_REPLICATION_FACTOR: 1
-  #     CONNECT_BOOTSTRAP_SERVERS: "dsi_kafka_00:9094"
-  #     CONNECT_REST_ADVERTISED_HOST_NAME: "kafka_connect"
-  #     CONNECT_REST_PORT: 8083
-  #     CONNECT_PLUGIN_PATH: "/usr/share/java"
-  #     CONNECT_GROUP_ID: n3KIrTWZSgCBNF1UZqvI8Q
-  #     CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-  #     CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-  #     KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
+  init_kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: dsi_init_kafka
+    depends_on:
+      - kafka_00
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.11
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      # blocks until kafka is reachable
+      kafka-topics --bootstrap-server dsi_kafka_00:9094 --list
+
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server dsi_kafka_00:9094 --create --if-not-exists --replication-factor 1 --partitions 1 --topic topic_interruptions
+      kafka-topics --bootstrap-server dsi_kafka_00:9094 --create --if-not-exists --replication-factor 1 --partitions 1 --topic topic_weather
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server dsi_kafka_00:9094 --list
+      "
 
   # kafka_consumer:
   #   build: 'node/.'
@@ -248,20 +215,20 @@ services:
   ################## Processing ###################
   #################################################
   
-  jupyter-spark:
-    build: spark/.
-    container_name: dsi_spark
-    networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.14
-    ports:
-      - "8889:8888"
-      - "4040:4040"
-    volumes:
-      - ./spark:/home/jovyan/work
-    environment:
-      - JUPYTER_ENABLE_LAB=yes
-    restart: unless-stopped
+  # jupyter-spark:
+  #   build: spark/.
+  #   container_name: dsi_spark
+  #   networks:
+  #     dsi_custom_bridge:
+  #       ipv4_address: 172.20.0.14
+  #   ports:
+  #     - "8889:8888"
+  #     - "4040:4040"
+  #   volumes:
+  #     - ./spark:/home/jovyan/work
+  #   environment:
+  #     - JUPYTER_ENABLE_LAB=yes
+  #   restart: unless-stopped
 
   #################################################
   ################### Database ####################
@@ -276,7 +243,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - dsi-postgres-data:/var/lib/postgresql/data
+      - dsi_postgres_data:/var/lib/postgresql/data
       - ./postgres:/docker-entrypoint-initdb.d
     environment:
       POSTGRES_DB: postgres
@@ -300,8 +267,8 @@ services:
   #   restart: unless-stopped
 
 volumes:
-  dsi-kafka-data:
-  dsi-postgres-data:
+  dsi_kafka_data:
+  dsi_postgres_data:
   # dsi-mongo-data:
 
 networks:
