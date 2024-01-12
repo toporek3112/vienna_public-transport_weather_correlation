@@ -1,8 +1,6 @@
 create table if not exists public.delays
 (
     id          integer not null
-        constraint delays_pk
-            primary key,
     column_name integer,
     title       varchar(255),
     lines       varchar,
@@ -29,3 +27,17 @@ create table if not exists public.weather
 
 alter table public.weather
     owner to postgres;
+
+create table if not exists public.stops
+(
+    id        integer not null
+        constraint stops_pk
+            primary key,
+    name      varchar,
+    longitude double precision,
+    latitude  double precision
+);
+
+alter table public.stops
+    owner to postgres;
+
