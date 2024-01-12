@@ -14,8 +14,11 @@ kafka_topic = os.getenv('KAFKA_TOPIC')
 checkpoint_file_name = 'checkpoint_interruptions.json'
 
 class Producer_Interruptions:
-    def __init__(self, source_url):
+    def __init__(self):
         print("Initializing Delays Producer")
+        print(f'Source Url: {source_url}')
+        print(f'Kafka Host: {kafka_host}')
+        print(f'  Weather Topic (Write): {kafka_topic}')
 
         self.source_url = source_url
         self.producer = KafkaProducer(

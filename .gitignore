@@ -139,3 +139,5 @@ __pycache__
 .ipynb_checkpoints
 docker/spark/checkpoint/**
 docker/spark/test/**
+checkpoint_interruptions.json
+already_requested_weather_date_frames.json

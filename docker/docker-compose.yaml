@@ -60,40 +60,6 @@ services:
     depends_on:
       - postgres
     restart: unless-stopped
-
-  # exporter_jmx:
-  #   image: bitnami/jmx-exporter:latest
-  #   container_name: dsi_exporter_jmx
-  #   networks:
-  #     dsi_custom_bridge:
-  #       ipv4_address: 172.20.0.7
-  #   ports:
-  #     - "5556:5556"
-  #   volumes:
-  #     - ./jmx-exporter/jmx-exporter-config.yaml:/opt/bitnami/jmx-exporter/jmx-exporter-config.yaml
-  #     - ./jmx-exporter/logging.properties:/opt/bitnami/jmx-exporter/logging.properties
-  #   environment:
-  #     JMX_EXPORTER_CONFIG: /opt/bitnami/jmx-exporter/jmx-exporter-config.yaml
-  #   restart: unless-stopped
-
-  # exporter_jmx:
-  #   image: local/jmx-exporter:1.11
-  #   container_name: exporter_jmx
-  #   networks:
-  #     dsi_custom_bridge:
-  #       ipv4_address: 172.20.0.7
-  #   ports:
-  #     - "5556:5556"
-  #   command: >
-  #     /bin/sh -c "
-  #     echo 'Contents of JMX Exporter Configuration File:';
-  #     cat /config/jmx-exporter-config.yaml;
-  #     echo 'Starting JMX Exporter...';
-  #     java -Djava.util.logging.config.file=/config/logging.properties -jar /jmx_prometheus_httpserver.jar '5556' /config/jmx-exporter-config.yaml;
-  #     "
-  #   environment:
-  #     - JMX_URL=service:jmx:rmi:///jndi/rmi://kafka1:9099/jmxrmi
-  #   restart: unless-stopped
   
   #################################################
   ##################### Kafka #####################
@@ -179,56 +145,36 @@ services:
   #     - kafka_00
   #     - kafka_producer_uber
 
-  # kafka_producer_uber:
-  #   build: 'node/.'
-  #   container_name: dsi_kafka_producer_uber
-  #   networks:
-  #     dsi_custom_bridge:
-  #       ipv4_address: 172.20.0.12
-  #   command: /bin/sh -c "sleep 30 && node index.js"
-  #   environment:
-  #     MODE: 'producer'
-  #     KAFKA_HOST: 'dsi_kafka_00:9094'
-  #     STOCK: 'UBER'
-  #     DEV: 'true'
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - kafka_00
+  kafka_producer_interruptions:
+    build: 'python/.'
+    container_name: dsi_kafka_producer_interruptions
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.12
+    environment:
+      MODE: 'producer_interruptions'
+      KAFKA_HOST: 'dsi_kafka_00:9094'
+      KAFKA_TOPIC: 'topic_interruptions'
+      SOURCE_URL: 'https://öffi.at/?archive=1&text=&types=2%2C3&page='
+    restart: unless-stopped
+    depends_on:
+      - kafka_00
 
-  # kafka_producer_nflx:
-  #   build: 'node/.'
-  #   container_name: dsi_kafka_producer_nflx
-  #   networks:
-  #     dsi_custom_bridge:
-  #       ipv4_address: 172.20.0.13
-  #   command: /bin/sh -c "sleep 30 && node index.js"
-  #   environment:
-  #     MODE: 'producer'
-  #     KAFKA_HOST: 'dsi_kafka_00:9094'
-  #     STOCK: 'NFLX'
-  #     # DEV: true
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - kafka_00
-
-  #################################################
-  ################## Processing ###################
-  #################################################
-  
-  # jupyter-spark:
-  #   build: spark/.
-  #   container_name: dsi_spark
-  #   networks:
-  #     dsi_custom_bridge:
-  #       ipv4_address: 172.20.0.14
-  #   ports:
-  #     - "8889:8888"
-  #     - "4040:4040"
-  #   volumes:
-  #     - ./spark:/home/jovyan/work
-  #   environment:
-  #     - JUPYTER_ENABLE_LAB=yes
-  #   restart: unless-stopped
+  kafka_producer_weather:
+    build: 'python/.'
+    container_name: dsi_kafka_producer_weather
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.13
+    environment:
+      MODE: 'producer_weather'
+      KAFKA_HOST: 'dsi_kafka_00:9094'
+      KAFKA_TOPIC: 'topic_weather'
+      KAFKA_INTERRUPTION_TOPIC: 'topic_interruptions'
+      SOURCE_URL: 'https://archive-api.open-meteo.com/v1/archive'
+    restart: unless-stopped
+    depends_on:
+      - kafka_00
 
   #################################################
   ################### Database ####################
@@ -244,32 +190,33 @@ services:
       - "5432:5432"
     volumes:
       - dsi_postgres_data:/var/lib/postgresql/data
-      - ./postgres:/docker-entrypoint-initdb.d
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     restart: unless-stopped
 
-  # mongo:
-  #   image: mongo:latest
-  #   container_name: dsi_mongo
-  #   networks:
-  #     dsi_custom_bridge:
-  #       ipv4_address: 172.20.0.9
-  #   ports:
-  #     - "27017:27017"
-  #   volumes:
-  #     - dsi-mongo-data:/data/db
-  #   environment:
-  #     MONGO_INITDB_ROOT_USERNAME: postgres
-  #     MONGO_INITDB_ROOT_PASSWORD: postgres
-  #   restart: unless-stopped
+  psotgres_setup_table:
+    build: 'python/.'
+    container_name: dsi_psotgres_setup_table
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.15
+    environment:
+      MODE: 'setup_db'
+      DB_HOST: 'dsi_postgres'
+      DB_PORT: '5432'
+      DB_NAME: 'dsi_project'
+      DB_USER: 'postgres'
+      DB_PASSWORD: 'postgres'
+      DB_TABLE: 'stops'
+    depends_on:
+      - postgres
 
 volumes:
   dsi_kafka_data:
   dsi_postgres_data:
-  # dsi-mongo-data:
 
 networks:
   dsi_custom_bridge:
