@@ -18,7 +18,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -103,10 +102,7 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "PFAE897580C4E86CD"
-          },
+          "datasource": "Postgres-Delays",
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
@@ -137,10 +133,7 @@
           "table": "weather_data"
         },
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "PFAE897580C4E86CD"
-          },
+          "datasource": "Postgres-Delays",
           "editorMode": "code",
           "format": "table",
           "hide": false,
@@ -283,10 +276,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "PFAE897580C4E86CD"
-          },
+          "datasource": "Postgres-Delays",
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
@@ -358,7 +348,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 312
+                "value": 376
               }
             ]
           },
@@ -394,7 +384,19 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 246
+                "value": 316
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time Start"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 172
               }
             ]
           }
@@ -423,14 +425,11 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "PFAE897580C4E86CD"
-          },
+          "datasource": "Postgres-Delays",
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT title as \"Title\", behoben as \"Behoben\", lines as \"Lines\", stations as \"Stations\", time_start_original as \"Time Start\" FROM delays LIMIT 50 ",
+          "rawSql": "SELECT  time_start_original as \"Time Start\", title as \"Title\", behoben as \"Behoben\", lines as \"Lines\", stations as \"Stations\" FROM delays WHERE $__timeFilter(time_start);",
           "refId": "A",
           "sql": {
             "columns": [
@@ -461,15 +460,15 @@
       "type": "table"
     }
   ],
-  "refresh": "",
+  "refresh": false,
   "schemaVersion": 38,
   "tags": [],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "2021-10-30T06:53:16.352Z",
-    "to": "2022-01-28T02:31:11.807Z"
+    "from": "2022-05-05T17:20:51.315Z",
+    "to": "2022-12-11T02:16:09.484Z"
   },
   "timepicker": {},
   "timezone": "",

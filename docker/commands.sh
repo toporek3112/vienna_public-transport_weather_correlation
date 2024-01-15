@@ -41,7 +41,7 @@ curl http://localhost:8083/connectors/
 #################################################
 
 # Export database
-docker exec pg_dump pg_dump -U postgres dsi_project > database_dump_14.01.24.sql
+docker exec dsi_postgres pg_dump -U postgres dsi_project > database_dump_15.01.24.sql
 
 ##################################################
 ##################### Debug ######################
@@ -78,3 +78,20 @@ export DB_PASSWORD="postgres" ;
 export DB_TABLE="stops" ;
 export KAFKA_HOST="localhost:9092"
 '
+
+##################################################
+###################### SQL #######################
+##################################################
+
+# query disruption count per station
+SELECT
+   stops.name,
+   COUNT(*) as disruption_count
+ FROM
+   delays
+ CROSS JOIN
+   jsonb_array_elements_text(delays.stations) as station_name
+ JOIN
+   stops ON station_name = stops.name 
+GROUP BY
+   stops.name;
