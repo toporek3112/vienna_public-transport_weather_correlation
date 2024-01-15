@@ -1,30 +1,67 @@
 # Data Science Infrastructure Project
 By Deleja-Hotko Julian and Topor Karol
 
-## Overview
-
+## Project Overview
+This project explores the relationship between weather patterns and public transport disruptions in Vienna, utilizing Grafana for data visualization.
 
 ## Infrastructure
 
+### Infrastructure Description
+
+The architecture for data processing and visualization in this project includes the following components:
+
+- `producer_delays`: A custom web scraper implemented in Python using BeautifulSoup to collect data on public transport delays from [öffi.at website](https://öffi.at/?archive=1&text=&types=2%2C3&page=).
+- `producer_weather`: A custom API scraper, also in Python, that retrieves weather data from the openmeteo API.
+- `Kafka`: Functions as the central messaging bus that transports events, which in this context are the delays and weather data.
+- `consumer_00`: A custom Python consumer that processes the data from Kafka.
+- `Postgres`: The database utilized for persisting the collected data.
+- `Grafana`: The tool used for visualizing the data that has been stored in the Postgres database.
+
+Each of these components plays a critical role in the pipeline from data collection to visualization.
+
+
 ![Diagram](img/DSI_proj_infrastructure.png)
 
-## Prerequisities
+
+## Data Processing Pipeline
+
+This pipeline details the process for analyzing how weather impacts public transport disruptions in Vienna:
+
+### Data Collection:
+- **Producer for Delays (`producer_delays`):**
+  
+   1. Starts the data collection by scraping the [öffi.at website](https://öffi.at/?archive=1&text=&types=2%2C3&page=) for public transport delay details.
+   2. Filters the acquired HTML content for relevant information and sends the data to the Kafka system.
+
+- **Producer for Weather (`producer_weather`):**
+  
+   3. Monitors the `topic_delays` in Kafka for new public transport interruption events.
+   4. Upon detecting new events, it extracts the date and time details.
+   5. Uses these details to retrieve corresponding weather conditions from the openmeteo API.
+   6. Parses the received weather data and forwards it to Kafka.
+
+### Data Consumption:
+- **Consumer (`consumer_00`):**
+  
+   7. Connects to Kafka topics, ingests the interruption and weather data streams, and processes them for subsequent storage.
+
+### Data Storage:
+- **PostgreSQL Database (`Postgres`):**
+  
+   8. Receives the processed data and serves as the permanent storage solution, ensuring data integrity and accessibility.
+
+### Data Visualization:
+- **Grafana:**
+  
+   9. Utilizes the stored data within Postgres to create visualizations that elucidate the relationship between weather patterns and transport delays.
+
+The entire pipeline is constructed to be both strong and flexible to support consistent data processing and enable comprehensive analysis.
+
+# Running the setup
+### Prerequisities
 Ensure you have the following prerequisites installed:
 + docker
 + docker-compose
-
-## Setup
-#### Optional
-Depending on where this infrastructure is running you may want to have some node metrics. In our case we are using node-exporter, prometheus and Grafana to get the metrics and visualize them. The needed dashboards are already provisiond. But for the node-exporter to run correctly you have to do the following:
-
-Lets make sure the node_exporter container will be able to mount the root directory so it can serve metrics:
-
-```{bash}
-sudo mount --make-shared /
-sudo systemctl restart docker
-```
-
-With all that setup you can now spin up the containers with docker-compose
 
 # Start up
 

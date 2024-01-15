@@ -1,26 +1,29 @@
 import os
-from producer_interruptions  import Producer_Interruptions
-from producer_weather import Producer_Weather
-from setup_db import Setup_DB
-from consumer import Consumer
+from clients.producer_delays import ProducerDelays
+from clients.producer_weather import ProducerWeather
+from clients.consumer import Consumer
+from clients.setup_db import SetupDB
+import logging
 
 def main():
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
     mode = os.getenv('MODE')
 
-    if mode == 'producer_interruptions':
-        consumer = Producer_Interruptions()
+    if mode == 'producer_delays':
+        consumer = ProducerDelays()
         consumer.run()
     elif mode == 'producer_weather':
-        producer = Producer_Weather()
+        producer = ProducerWeather()
         producer.run()
     elif mode == 'consumer':
         producer = Consumer()
         producer.run()
     elif mode == 'setup_db':
-        setup_db = Setup_DB()
+        setup_db = SetupDB()
         setup_db.run()
     else:
-        print("Invalid MODE. Please set MODE (environment variable) to 'producer_delays', 'producer_weather' or 'consumer'.")
+        logger.error("Invalid MODE. Please set MODE (environment variable) to 'producer_delays', 'producer_weather' or 'consumer'.")
 
 if __name__ == "__main__":
     main()

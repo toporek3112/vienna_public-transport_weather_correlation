@@ -1,13 +1,13 @@
 apiVersion: 1
 
 datasources:
-  - name: Postgres-stocks
+  - name: Postgres-Delays
     type: postgres
     access: proxy
     orgId: 1
     url: dsi_postgres:5432
     user: postgres
-    database: tmp
+    database: dsi_project
     secureJsonData:
       password: "postgres"
     isDefault: false

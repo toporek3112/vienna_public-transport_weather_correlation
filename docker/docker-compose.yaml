@@ -123,39 +123,27 @@ services:
       kafka-topics --bootstrap-server dsi_kafka_00:9094 --list
 
       echo -e 'Creating kafka topics'
-      kafka-topics --bootstrap-server dsi_kafka_00:9094 --create --if-not-exists --replication-factor 1 --partitions 1 --topic topic_interruptions
+      kafka-topics --bootstrap-server dsi_kafka_00:9094 --create --if-not-exists --replication-factor 1 --partitions 1 --topic topic_delays
       kafka-topics --bootstrap-server dsi_kafka_00:9094 --create --if-not-exists --replication-factor 1 --partitions 1 --topic topic_weather
 
       echo -e 'Successfully created the following topics:'
       kafka-topics --bootstrap-server dsi_kafka_00:9094 --list
       "
 
-  # kafka_consumer:
-  #   build: 'node/.'
-  #   container_name: dsi_kafka_consumer
-  #   networks:
-  #     dsi_custom_bridge:
-  #       ipv4_address: 172.20.0.11
-  #   command: /bin/sh -c "sleep 30 && node index.js"
-  #   environment:
-  #     MODE: 'consumer'
-  #     KAFKA_HOST: 'dsi_kafka_00:9094'
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - kafka_00
-  #     - kafka_producer_uber
-
-  kafka_producer_interruptions:
+  kafka_consumer:
     build: 'python/.'
-    container_name: dsi_kafka_producer_interruptions
+    container_name: dsi_kafka_consumer
     networks:
       dsi_custom_bridge:
-        ipv4_address: 172.20.0.12
+        ipv4_address: 172.20.0.14
     environment:
-      MODE: 'producer_interruptions'
+      MODE: 'consumer'
       KAFKA_HOST: 'dsi_kafka_00:9094'
-      KAFKA_TOPIC: 'topic_interruptions'
-      SOURCE_URL: 'https://öffi.at/?archive=1&text=&types=2%2C3&page='
+      DB_HOST: 'dsi_postgres'
+      DB_PORT: '5432'
+      DB_NAME: 'dsi_project'
+      DB_USER: 'postgres'
+      DB_PASSWORD: 'postgres'
     restart: unless-stopped
     depends_on:
       - kafka_00
@@ -170,11 +158,28 @@ services:
       MODE: 'producer_weather'
       KAFKA_HOST: 'dsi_kafka_00:9094'
       KAFKA_TOPIC: 'topic_weather'
-      KAFKA_INTERRUPTION_TOPIC: 'topic_interruptions'
+      KAFKA_INTERRUPTION_TOPIC: 'topic_delays'
       SOURCE_URL: 'https://archive-api.open-meteo.com/v1/archive'
     restart: unless-stopped
     depends_on:
       - kafka_00
+
+  kafka_producer_delays:
+    build: 'python/.'
+    container_name: dsi_kafka_producer_delays
+    networks:
+      dsi_custom_bridge:
+        ipv4_address: 172.20.0.12
+    environment:
+      MODE: 'producer_delays'
+      KAFKA_HOST: 'dsi_kafka_00:9094'
+      KAFKA_TOPIC: 'topic_delays'
+      SOURCE_URL: 'https://öffi.at/?archive=1&text=&types=2%2C3&page='
+      TIMEOUT: '10'
+    restart: unless-stopped
+    depends_on:
+      - kafka_00
+      - kafka_producer_weather
 
   #################################################
   ################### Database ####################
