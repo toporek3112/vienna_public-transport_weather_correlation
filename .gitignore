@@ -140,4 +140,5 @@ __pycache__
 docker/spark/checkpoint/**
 docker/spark/test/**
 checkpoint_delays.json
-already_requested_weather_date_frames.json
+checkpoint_weather.txt
+.cache.sqlite

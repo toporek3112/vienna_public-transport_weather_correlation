@@ -7,11 +7,29 @@ docker exec -it dsi_postgres /bin/bash
 docker build -t debug-tools .
 docker run -it --rm --network docker_dsi_custom_bridge debug-tools
 
+# db setup container
+docker run --rm \
+  --network docker_dsi_custom_bridge \
+  -e MODE='setup_db' \
+  -e DB_HOST='dsi_postgres' \
+  -e DB_PORT='5432' \
+  -e DB_NAME='dsi_project' \
+  -e DB_USER='postgres' \
+  -e DB_PASSWORD='postgres' \
+  -e DB_TABLE='stops' \
+  docker_psotgres_setup_table
+
 #################################################
 ################### Postgres ####################
 #################################################
 
 psql -h dsi_postgres -p 5432 -U postgres -d postgres
+
+# Export database
+docker exec dsi_postgres pg_dump -U postgres dsi_project > database_dump_16.01.24.sql
+
+INSERT INTO producer_delays_checkpoint (page, behoben, delay_id, last_scrape_time)
+ VALUES (2632, TRUE, '26740', TO_TIMESTAMP(1705354511.2298088));
 
 #################################################
 #################### Kafka ######################
@@ -36,13 +54,6 @@ curl -X POST -H "Content-Type: application/json" --data @kafka_connect/connector
 # check running connectors
 curl http://localhost:8083/connectors/
 
-#################################################
-################## Postgres #####################
-#################################################
-
-# Export database
-docker exec dsi_postgres pg_dump -U postgres dsi_project > database_dump_15.01.24.sql
-
 ##################################################
 ##################### Debug ######################
 ##################################################
@@ -52,7 +63,7 @@ alias set_producer_delays='export MODE="producer_delays" ;
 export KAFKA_HOST="localhost:9092" ;
 export KAFKA_TOPIC="topic_delays" ;
 export SOURCE_URL="https://öffi.at/?archive=1&text=&types=2%2C3&page=" ;
-export TIMEOUT="10"'
+export TIMEOUT_SECONDS="10"'
 alias set_producer_weather='export MODE="producer_weather" ;
 export KAFKA_HOST="localhost:9092" ;
 export KAFKA_TOPIC="topic_weather" ;
@@ -85,6 +96,24 @@ export KAFKA_HOST="localhost:9092"
 
 # query disruption count per station
 SELECT
+  stops.name as "Station",
+  COUNT(*) as "Delays",
+  stops.longitude,
+  stops.latitude
+FROM
+  delays
+CROSS JOIN
+  jsonb_array_elements_text(delays.stations) as station_name
+JOIN
+  stops ON station_name = stops.name
+WHERE 
+  $__timeFilter(delays.time_start)
+GROUP BY
+  stops.name, stops.longitude, stops.latitude;
+
+
+# query total disruption count for a station
+SELECT
    stops.name,
    COUNT(*) as disruption_count
  FROM
@@ -92,6 +121,31 @@ SELECT
  CROSS JOIN
    jsonb_array_elements_text(delays.stations) as station_name
  JOIN
-   stops ON station_name = stops.name 
+   stops ON station_name = stops.name
+WHERE stops.name = ('${Station:raw}') AND $__timeFilter(delays.time_start)
 GROUP BY
-   stops.name;
+   stops.name
+
+# query list of disruptions for selected station
+SELECT
+  time_start_original as "Time Start",
+  title as "Title",
+  behoben as "Behoben",
+  lines as "Lines",
+  stations as "Stations"
+FROM
+  delays
+WHERE
+  $__timeFilter(time_start)
+  AND ('${Station:raw}') = ANY (SELECT jsonb_array_elements_text(stations));
+
+
+ SELECT
+   time_start,
+   count(title)
+ FROM
+   delays
+ WHERE
+   'Johnstraße' = ANY (SELECT jsonb_array_elements_text(stations))
+ GROUP BY time_start
+ ORDER by time_start desc

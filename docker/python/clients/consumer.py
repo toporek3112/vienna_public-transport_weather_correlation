@@ -1,44 +1,50 @@
 from kafka import KafkaConsumer
 import os
+import sys
+import time
 import logging
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from clients.events.delays import Delay
-from clients.events.weather_data import WeatherData
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from clients.events.delay import Delay
+from clients.events.weather_data import WeatherData
+from utils.database import Database
 
 Base = declarative_base()
 
 class Consumer:
   def __init__(self):
-# Configure logging
+    # Configure logging
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     self.logger = logging.getLogger(__name__)
     
     self.logger.info("Initializing Consumer")
-    
-    db_host = os.getenv('DB_HOST')
-    db_port = os.getenv('DB_PORT')
-    db_user = os.getenv('DB_USER')
-    db_password = os.getenv('DB_PASSWORD')
-    db_name = os.getenv('DB_NAME')
+
     kafka_host = os.getenv('KAFKA_HOST')
 
-    # Initialize the database engine
-    self.engine = create_engine(f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}')
-    Base.metadata.create_all(self.engine)
+    self.session = Database.get_session()
 
-    # Create a session
-    Session = sessionmaker(bind=self.engine)
-    self.session = Session()
+    # Retry mechanism for Kafka connection
+    max_retries = 5
+    retry_count = 0
+    while retry_count < max_retries:
+      try:
+        # Initialize the Kafka consumer
+        self.consumer = KafkaConsumer(
+          'topic_delays',
+          'topic_weather',
+          bootstrap_servers=kafka_host,
+          group_id='consumer_01' 
+        )
+        break
+      except Exception as e:
+        self.logger.warning(f"Attempt {retry_count + 1} failed to connect Kafka Producer: {e}")
+        time.sleep(5)  # wait for 5 seconds before next attempt
+        retry_count += 1
 
-    # Initialize the Kafka consumer
-    self.consumer = KafkaConsumer(
-      'topic_delays',
-      'topic_weather',
-      bootstrap_servers=kafka_host,
-      group_id='consumer_01' 
-    )
+    if retry_count == max_retries:
+      self.logger.error("Failed to connect to Kafka after multiple attempts.")
+      sys.exit(1)
   
   def run(self):
     try:
@@ -47,13 +53,23 @@ class Consumer:
         event = message.value.decode('utf-8')
 
         if message.topic == 'topic_delays':
-          # Create an instance of Interruption
+          # Create an instance of Delay with the event data
           delay = Delay(event)
-          self.logger.info(f'Inserting delay with id {delay.id} into database')
-          # Add to session and commit
-          self.session.add(delay)
+          self.logger.info(f'Upserting delay with id_delays {delay.id_delays} into database')
+  
+          # Check if a record with this id_delays exists
+          existing_delay = self.session.query(Delay).filter(Delay.id_delays == delay.id_delays).first()
+  
+          if existing_delay:
+            # Update existing record
+            for key, value in vars(delay).items():
+              setattr(existing_delay, key, value)
+          else:
+            # Insert new record
+            self.session.add(delay)
+  
           self.session.commit()
-
+  
         elif message.topic == 'topic_weather':
           # Create Instance of WeatherData with the json event 
           weather_data = WeatherData(event)

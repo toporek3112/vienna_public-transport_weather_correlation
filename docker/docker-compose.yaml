@@ -139,11 +139,7 @@ services:
     environment:
       MODE: 'consumer'
       KAFKA_HOST: 'dsi_kafka_00:9094'
-      DB_HOST: 'dsi_postgres'
-      DB_PORT: '5432'
-      DB_NAME: 'dsi_project'
-      DB_USER: 'postgres'
-      DB_PASSWORD: 'postgres'
+      DB_CONNECTION : 'postgresql://postgres:postgres@dsi_postgres/dsi_project'
     restart: unless-stopped
     depends_on:
       - kafka_00
@@ -160,6 +156,7 @@ services:
       KAFKA_TOPIC: 'topic_weather'
       KAFKA_INTERRUPTION_TOPIC: 'topic_delays'
       SOURCE_URL: 'https://archive-api.open-meteo.com/v1/archive'
+      DB_CONNECTION : 'postgresql://postgres:postgres@dsi_postgres/dsi_project'
     restart: unless-stopped
     depends_on:
       - kafka_00
@@ -175,7 +172,8 @@ services:
       KAFKA_HOST: 'dsi_kafka_00:9094'
       KAFKA_TOPIC: 'topic_delays'
       SOURCE_URL: 'https://öffi.at/?archive=1&text=&types=2%2C3&page='
-      TIMEOUT: '10'
+      DB_CONNECTION : 'postgresql://postgres:postgres@dsi_postgres:5432/dsi_project'
+      TIMEOUT_SECONDS: '10'
     restart: unless-stopped
     depends_on:
       - kafka_00
@@ -210,11 +208,7 @@ services:
         ipv4_address: 172.20.0.15
     environment:
       MODE: 'setup_db'
-      DB_HOST: 'dsi_postgres'
-      DB_PORT: '5432'
-      DB_NAME: 'dsi_project'
-      DB_USER: 'postgres'
-      DB_PASSWORD: 'postgres'
+      DB_CONNECTION : 'postgresql://postgres:postgres@dsi_postgres:5432/dsi_project'
       DB_TABLE: 'stops'
     depends_on:
       - postgres

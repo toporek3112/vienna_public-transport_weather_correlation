@@ -1,19 +1,14 @@
 # Start with a Miniconda base image
-FROM continuumio/miniconda3
+FROM 311200/my_conda:latest
+
+# Disable buffering console output for python 
+ENV PYTHONUNBUFFERED=1
 
 # Set the working directory in the container
 WORKDIR /usr/src/app
 
 # Copy the current directory contents and the environment.yml file into the container
 COPY . /usr/src/app
-
-# Create a new Conda environment from the environment.yml file
-RUN conda env create -f environment.yaml
-
-# Instead of activating, directly run commands in the environment
-# Use 'conda run' to run your commands in the 'development' environment
-# For example, to list packages in the environment:
-RUN conda run -n development conda list
 
 # The code to run when the container is started
 # Use 'conda run' to ensure the script runs in the 'development' environment

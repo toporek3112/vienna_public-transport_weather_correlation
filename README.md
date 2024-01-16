@@ -55,7 +55,14 @@ This pipeline details the process for analyzing how weather impacts public trans
   
    9. Utilizes the stored data within Postgres to create visualizations that elucidate the relationship between weather patterns and transport delays.
 
-The entire pipeline is constructed to be both strong and flexible to support consistent data processing and enable comprehensive analysis.
+The entire pipeline is constructed to be both strong and flexible to support 
+consistent data processing and enable comprehensive analysis.
+
+## Grafana
+### Overview of all stations in Vienna
+![image.png](./img/grafana_overview.png)
+### Overview of certain station
+![image.png](./img/grafana_station_overview.png)
 
 # Running the setup
 ### Prerequisities
@@ -63,9 +70,8 @@ Ensure you have the following prerequisites installed:
 + docker
 + docker-compose
 
-# Start up
+## Start up
 
 ```{bash}
-# cd docker
-docker-compose up -d
+docker-compose -f docker/docker-compose.yaml up -d
 ```

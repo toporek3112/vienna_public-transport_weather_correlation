@@ -1,67 +1,66 @@
 from kafka import KafkaProducer, KafkaConsumer
-from datetime import date, datetime
-import json
-import os
-import time
+from utils.producer_weather_checkpoint import ProducerWeatherCheckpoint
+from datetime import date, timedelta
+from retry_requests import retry
 import openmeteo_requests
 import requests_cache
 import pandas as pd
-from retry_requests import retry
+import json
+import sys
+import os
+import time
 import logging
 
 class ProducerWeather():
     def __init__(self):
       # Inizialize logger
-      logging.basicConfig(level=logging.INFO)
+      logging.basicConfig(level=logging.DEBUG)
       self.logger = logging.getLogger(__name__)
 
       self.source_url = os.getenv('SOURCE_URL')
       self.kafka_host = os.getenv('KAFKA_HOST')
       self.kafka_topic = os.getenv('KAFKA_TOPIC')
       self.kafka_delays_topic = os.getenv('KAFKA_INTERRUPTION_TOPIC')
+
       self.cache_session = requests_cache.CachedSession('.cache', expire_after = -1)
       self.retry_session = retry(self.cache_session, retries = 5, backoff_factor = 0.2)
       self.openmeteo = openmeteo_requests.Client(session = self.retry_session)
 
-      self.producer = KafkaProducer(
-          bootstrap_servers=self.kafka_host,
-          value_serializer=lambda v: json.dumps(v).encode('utf-8')
-      )
-      self.consumer = KafkaConsumer(
-          self.kafka_delays_topic,
-          bootstrap_servers=self.kafka_host,
-          value_deserializer=lambda m: json.loads(m.decode('utf-8')),
-          group_id='producer_weather'
-      )
+          # Retry mechanism for Kafka connection
+      max_retries = 5
+      retry_count = 0
+      while retry_count < max_retries:
+        try:
+          self.producer = KafkaProducer(
+              bootstrap_servers=self.kafka_host,
+              value_serializer=lambda v: json.dumps(v).encode('utf-8')
+          )
+          self.consumer = KafkaConsumer(
+              self.kafka_delays_topic,
+              bootstrap_servers=self.kafka_host,
+              value_deserializer=lambda m: json.loads(m.decode('utf-8')),
+              group_id='producer_weather'
+          )
+          break
+        except Exception as e:
+            self.logger.warning(f"Attempt {retry_count + 1} failed to connect Kafka Producer: {e}")
+            time.sleep(5)  # wait for 5 seconds before next attempt
+            retry_count += 1
 
-      self.checkpoint_file_path = 'checkpoint_weather.txt'
+        if retry_count == max_retries:
+          self.logger.error("Failed to connect to Kafka after multiple attempts.")
+          sys.exit(1)
+
+      self.db = ProducerWeatherCheckpoint()
       
-      # Default value if the file doesn't exist or is empty/invalid
-      self.latest_requested_date = date.min
-      # If the file doesn't exist, log and use the default value
-      if not os.path.exists(self.checkpoint_file_path):
-          self.logger.info(f'Checkpoint file not found. Using default latest_requested_date: {self.latest_requested_date}')
-          return
-      # Try reading the file
-      try:
-          with open(self.checkpoint_file_path, 'r') as file:
-              file_content = file.read().strip()
-          # If the file is empty, log and use the default value
-          if not file_content:
-              self.logger.info(f'Empty checkpoint file. Using default latest_requested_date: {self.latest_requested_date}')
-              return
-          # Try converting the content to a datetime object
-          self.latest_requested_date = date.fromisoformat(file_content)
-          self.logger.info(f'Using latest_requested_date: {self.latest_requested_date}')
-      except ValueError:
-          self.logger.info(f'Invalid checkpoint file. Using default latest_requested_date: {self.latest_requested_date}')
-
+      self.checkpoint = self.db.get_checkpoint()
 
       self.logger.info('Initializing Weather Producer')
       self.logger.info(f'Source Url: {self.source_url}')
       self.logger.info(f'Kafka Host: {self.kafka_host}')
       self.logger.info(f'Weather Topic (Write): {self.kafka_topic}')
       self.logger.info(f'Delays Topic (Read): {self.kafka_delays_topic}')
+      self.logger.info(f'Last requested date: {self.checkpoint.date}')
 
     def __listen_for_delays(self):
       self.logger.info("*** Listening for interruption events from Kafka ***")
@@ -97,15 +96,13 @@ class ProducerWeather():
         df_batch['end'] = pd.to_datetime(df_batch['end'], format='%d.%m.%Y %H:%M')
         yield df_batch
 
-    def __fetch_weather(self, date_time):
-      date_frame = [date_time[0], date_time[-1]]
-
-      self.logger.info(f'Fetching weather data for dates from {date_frame[0]} to {date_frame[1]}')
+    def __fetch_weather(self, latest_date):
+      self.logger.info(f'Fetching weather data for dates from {self.checkpoint.date} to {latest_date}')
       api_params = {
 	        "latitude": 48.210033,
 	        "longitude": 16.363449,
-	        "start_date": date_time[0],
-	        "end_date": date_time[-1],
+	        "start_date": self.checkpoint.date,
+	        "end_date": latest_date,
 	        "hourly": ["temperature_2m", "relative_humidity_2m", "wind_speed_10m"]
       }
 
@@ -140,36 +137,33 @@ class ProducerWeather():
         # Send the row as a message to Kafka
         self.producer.send(self.kafka_topic, value=row_json)
 
-    def __check_if_weather_already_requested(self, latest_date):
-      self.logger.info(f'Latest requested date is {self.latest_requested_date}')
-      already_requested = True
-      
-      # Check if the latest_date is later than the latest_requested_date
-
-      if latest_date > self.latest_requested_date:
-          self.logger.info(f'Saving date {latest_date} to checkpoint_weather.txt file')
-          already_requested = False
-          with open(self.checkpoint_file_path, 'w') as file:
-              file.write(latest_date.isoformat())
-      
-      return already_requested
-
     def run(self):
       self.logger.info('***** Starting Weather Producer *****')
       try:
-        # Listen for interruption events
+        # Listen for interruption events and get batch dataframe of events
         for df_event_batch in self.__listen_for_delays():
-          # Get the latest date from the DataFrame
-          latest_date = df_event_batch['start'].max().date()
-          self.logger.info(f'Event batch latest date is {latest_date}')
 
-          already_requested = self.__check_if_weather_already_requested(latest_date)
+          # Get the latest date from the evets batch
+          latest_date = df_event_batch['start'].max().date()
+          self.logger.info(f'Checkpoint date: {self.checkpoint.date} | Events Batch latest date: {latest_date}')
+
+          # Check if checkpoint date is None --> no weather data has been requested yet
+          if self.checkpoint.date == None:
+            self.checkpoint.date = latest_date - timedelta(days=1)
+            self.logger.info(f'Checkpoint date is None, setting it to {self.checkpoint.date}')
+
+          # Check if the weather data for the date has already been requested
+          already_requested = True
+          if latest_date > self.checkpoint.date:
+            already_requested = False
           
           if not already_requested:
-            df_weather = self.__fetch_weather([self.latest_requested_date, latest_date])
-            self.latest_requested_date = latest_date
+            df_weather = self.__fetch_weather(latest_date)
+            self.checkpoint.date = latest_date
             self.__write_weather_to_kafka(df_weather)
 
+            self.checkpoint.date = latest_date
+            self.db.save_checkpoint(self.checkpoint)
           else:
              self.logger.info('Date frame for weather data already requested. Skipping...')
       except Exception as e:

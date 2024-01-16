@@ -1,11 +1,12 @@
+from utils.producer_delays_checkpoint import ProducerDelaysCheckpoint
 from kafka import KafkaProducer
+from bs4 import BeautifulSoup
+from datetime import datetime
 import json
 import requests
 import sys
 import re
 import os
-from bs4 import BeautifulSoup
-from datetime import datetime
 import time
 import logging
 
@@ -16,19 +17,42 @@ class ProducerDelays:
 
     self.source_url = source_url = os.getenv('SOURCE_URL')
     self.kafka_host = kafka_host = os.getenv('KAFKA_HOST')
-    self.checkpoint_file_name = 'checkpoint_delays.json'
     self.kafka_topic = kafka_topic = os.getenv('KAFKA_TOPIC')
-    self.timeout = int(os.getenv('TIMEOUT'))
+    self.timeout = int(os.getenv('TIMEOUT_SECONDS'))
 
-    self.producer = KafkaProducer(
-      bootstrap_servers=kafka_host,
-      value_serializer=lambda v: json.dumps(v).encode('utf-8')
-    )
+    self.db = ProducerDelaysCheckpoint()
+
+    # Retry mechanism for Kafka connection
+    max_retries = 5
+    retry_count = 0
+    while retry_count < max_retries:
+      try:
+        self.producer = KafkaProducer(
+          bootstrap_servers=self.kafka_host,
+          value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        )
+        # Test the connection
+        self.producer.bootstrap_connected()
+        self.logger.info("Kafka Producer connected successfully.")
+        break
+      except Exception as e:
+        self.logger.warning(f"Attempt {retry_count + 1} failed to connect Kafka Producer: {e}")
+        time.sleep(5)  # wait for 5 seconds before next attempt
+        retry_count += 1
+
+    if retry_count == max_retries:
+      self.logger.error("Failed to connect to Kafka after multiple attempts.")
+      sys.exit(1)
+
+    self.checkpoint = self.db.get_checkpoint()
 
     self.logger.info("Initializing Delays Producer")
     self.logger.info(f'Source Url: {source_url}')
     self.logger.info(f'Kafka Host: {kafka_host}')
-    self.logger.info(f'  Weather Topic (Write): {kafka_topic}')
+    self.logger.info(f'Weather Topic (Write): {kafka_topic}')
+    self.logger.info(f'Last scrape time: {self.checkpoint.last_scrape_time}')
+    self.logger.info(f'Last scraped page: {self.checkpoint.page}')
+    self.logger.info(f'Last scraped delay ID: {self.checkpoint.delay_id}')
 
   def __get_number_of_pages(self):
     # Fetch html from source url
@@ -39,46 +63,14 @@ class ProducerDelays:
     number_of_pages = int(soup.find(string = re.compile(r'Aktuelle Seite: \d+/\d+')).split('/')[-1].strip()[:-1])
     return number_of_pages
 
-  def __save_checkpoint(self, checkpoint):
-    self.logger.info(f'***** Saving checkpoint to {self.checkpoint_file_name} *****')
-
-    with open(f'./{self.checkpoint_file_name}', 'w') as file:
-      json.dump(checkpoint, file)
-
-  def __get_checkpoint(self):
-    self.logger.info(f'Looking up checkpoint from {self.checkpoint_file_name}')
-
-    # Check if checkpoint_delays.json exists if not create it
-    if not os.path.exists(f'./{self.checkpoint_file_name}'):
-      self.logger.info(f'{self.checkpoint_file_name} not found. Creating...')
-
-      number_of_pages = self.__get_number_of_pages()
-
-      with open(f'./{self.checkpoint_file_name}', 'w') as file:
-        json.dump(
-          {
-            "page": number_of_pages,
-            "behoben": None,
-            "id": None,
-            "last_scrape_time": time.time()
-          },
-          file
-        )
-
-		# Read checkpoint.json and print info about last checkpoint
-    with open(f'./{self.checkpoint_file_name}', 'r') as file:
-      checkpoint = json.load(file)
-      self.logger.info(f'Last checkpoint: Page: {checkpoint["page"]} | ID: {checkpoint["id"]} | Behoben: {checkpoint["behoben"]} | Last Scrape Time: {datetime.fromtimestamp(checkpoint["last_scrape_time"])} ')
-      return checkpoint
-
   def __scrape_delays(self):
-    # Get checkpoint of last scrape
-    checkpoint = self.__get_checkpoint()
+    if self.checkpoint.page == 0:
+      self.checkpoint.page = self.__get_number_of_pages()
 
-    self.logger.info(f'*** Scraping Page {checkpoint["page"]} ***')
+    self.logger.info(f'*** Scraping Page {self.checkpoint.page} ***')
 
 		# Get page source html
-    response = requests.get(f'{self.source_url}{checkpoint["page"]}')
+    response = requests.get(f'{self.source_url}{self.checkpoint.page}')
 
 		# Parse html into beautifulSoup
     soup = BeautifulSoup(response.content, 'html.parser')
@@ -121,12 +113,12 @@ class ProducerDelays:
     
       delays.append(interruption)
     # Overwrite old checkpoint
-    if checkpoint['page'] != 1: checkpoint['page'] = checkpoint['page'] - 1
-    checkpoint['behoben'] = delays[0]['behoben']
-    checkpoint['id'] = delays[0]['id']
-    checkpoint['last_scrape_time'] = time.time()
+    if self.checkpoint.page != 1: self.checkpoint.page = self.checkpoint.page - 1
+    self.checkpoint.behoben = delays[0]['behoben']
+    self.checkpoint.delay_id = delays[0]['id']
+    self.checkpoint.last_scrape_time = datetime.fromtimestamp(time.time())
     
-    return [checkpoint, delays]
+    return delays
 
   def run(self):
     self.logger.info('***** Starting Delays Producer *****')
@@ -134,7 +126,7 @@ class ProducerDelays:
     try:
       while True:
         # Scrape delays
-        checkpoint, delays = self.__scrape_delays()
+        delays = self.__scrape_delays()
       
 			  # Send each JSON object as a separate message
         for delay in delays:
@@ -145,7 +137,7 @@ class ProducerDelays:
         self.producer.flush()
         
         # Save checkpoint to file
-        self.__save_checkpoint(checkpoint)
+        self.db.save_checkpoint(self.checkpoint)
         time.sleep(self.timeout)
     except Exception as e:
       self.logger.error(f"AN ERROR OCCURED: {e}")
