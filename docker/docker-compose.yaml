@@ -200,7 +200,7 @@ services:
       POSTGRES_PASSWORD: postgres
     restart: unless-stopped
 
-  psotgres_setup_table:
+  postgres_setup_table:
     build: 'python/.'
     container_name: dsi_psotgres_setup_table
     networks:
