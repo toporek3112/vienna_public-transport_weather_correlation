@@ -37,7 +37,7 @@ class ProducerDelays:
         break
       except Exception as e:
         self.logger.warning(f"Attempt {retry_count + 1} failed to connect Kafka Producer: {e}")
-        time.sleep(5)  # wait for 5 seconds before next attempt
+        hourly_dataframe # wait for 5 seconds before next attempt
         retry_count += 1
 
     if retry_count == max_retries:
