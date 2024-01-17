@@ -59,6 +59,7 @@ The entire pipeline is constructed to be both strong and flexible to support
 consistent data processing and enable comprehensive analysis.
 
 ## Grafana
+http://localhost:3000
 ### Overview of all stations in Vienna
 ![image.png](./img/grafana_overview.png)
 ### Overview of certain station
