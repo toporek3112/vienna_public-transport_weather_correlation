@@ -17,7 +17,7 @@ create table if not exists public.weather
     id            integer not null
         constraint weather_pk
             primary key,
-    date          date,
+    time        tiemstamp,
     weather_code  integer,
     temperature   double precision,
     daylight      double precision,
