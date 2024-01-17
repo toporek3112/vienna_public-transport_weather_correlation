@@ -13,5 +13,3 @@ Like container *dsi_kafka_consumer*, consumes the data from both topics and writ
 
 ## stations:
 Imports the station data from the csv file into the database. This is included in the container *dsi_kafka_consumer*.
-
-
