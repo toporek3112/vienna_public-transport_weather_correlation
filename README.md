@@ -76,3 +76,5 @@ Ensure you have the following prerequisites installed:
 ```{bash}
 docker-compose -f docker/docker-compose.yaml up -d
 ```
+he System will autmatically start up and run all collection and processing scripts on creation, no further interaction should be necessary.
+Note: To avoid rate limiting, Öffi.at data is scraped at a fairly slow pace, meaning the database and visualization will be almost empty if inspected immediatly after creation.
