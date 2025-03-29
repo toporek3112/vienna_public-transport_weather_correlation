@@ -1,19 +1,19 @@
 #################################################
 #################### Docker #####################
 #################################################
-docker exec -it dsi_postgres /bin/bash
+docker exec -it vptwc_postgres /bin/bash
 
 # troubleshooting container
 docker build -t debug-tools .
-docker run -it --rm --network docker_dsi_custom_bridge debug-tools
+docker run -it --rm --network docker_vptwc_custom_bridge debug-tools
 
 # db setup container
 docker run --rm \
-  --network docker_dsi_custom_bridge \
+  --network docker_vptwc_custom_bridge \
   -e MODE='setup_db' \
-  -e DB_HOST='dsi_postgres' \
+  -e DB_HOST='vptwc_postgres' \
   -e DB_PORT='5432' \
-  -e DB_NAME='dsi_project' \
+  -e DB_NAME='vptwc_project' \
   -e DB_USER='postgres' \
   -e DB_PASSWORD='postgres' \
   -e DB_TABLE='stops' \
@@ -23,10 +23,10 @@ docker run --rm \
 ################### Postgres ####################
 #################################################
 
-psql -h dsi_postgres -p 5432 -U postgres -d postgres
+psql -h vptwc_postgres -p 5432 -U postgres -d postgres
 
 # Export database
-docker exec dsi_postgres pg_dump -U postgres dsi_project > database_dump_16.01.24.sql
+docker exec vptwc_postgres pg_dump -U postgres vptwc_project > database_dump_16.01.24.sql
 
 INSERT INTO producer_delays_checkpoint (page, behoben, delay_id, last_scrape_time)
  VALUES (2632, TRUE, '26740', TO_TIMESTAMP(1705354511.2298088));
@@ -58,7 +58,7 @@ curl http://localhost:8083/connectors/
 ##################### Debug ######################
 ##################################################
 
-# dsi_project
+# vptwc_project
 alias set_producer_delays='export MODE="producer_delays" ;
 export KAFKA_HOST="localhost:9092" ;
 export KAFKA_TOPIC="topic_delays" ;
@@ -75,7 +75,7 @@ export MODE="consumer" ;
 export KAFKA_HOST="localhost:9092" ; 
 export DB_HOST="localhost" ;
 export DB_PORT="5432" ;
-export DB_NAME="dsi_project" ; 
+export DB_NAME="vptwc_project" ; 
 export DB_USER="postgres" ; 
 export DB_PASSWORD="postgres"
 '
@@ -83,7 +83,7 @@ export DB_PASSWORD="postgres"
 alias set_setup_db='export MODE="setup_db" ;
 export DB_HOST="localhost" ;
 export DB_PORT="5432" ;
-export DB_NAME="dsi_project" ;
+export DB_NAME="vptwc_project" ;
 export DB_USER="postgres" ;
 export DB_PASSWORD="postgres" ;
 export DB_TABLE="stops" ;

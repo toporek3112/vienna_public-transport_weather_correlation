@@ -1,10 +1,9 @@
 -- init.sql
 
-CREATE DATABASE grafana;
-CREATE DATABASE dsi_project;
-ALTER DATABASE dsi_project OWNER TO postgres;
+CREATE DATABASE vptwc_project;
+ALTER DATABASE vptwc_project OWNER TO postgres;
 
-\c dsi_project;
+\c vptwc_project;
 
 -- CREATE TABLE stops (
 --     stop_id INT,

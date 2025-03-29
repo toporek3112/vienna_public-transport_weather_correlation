@@ -5,9 +5,9 @@ datasources:
     type: postgres
     access: proxy
     orgId: 1
-    url: dsi_postgres:5432
+    url: vptwc_postgres:5432
     user: postgres
-    database: dsi_project
+    database: vptwc_project
     secureJsonData:
       password: "postgres"
     isDefault: false

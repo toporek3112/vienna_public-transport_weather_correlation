@@ -26,7 +26,7 @@ class ProducerWeather():
       self.retry_session = retry(self.cache_session, retries = 5, backoff_factor = 0.2)
       self.openmeteo = openmeteo_requests.Client(session = self.retry_session)
 
-          # Retry mechanism for Kafka connection
+      # Retry mechanism for Kafka connection
       max_retries = 5
       retry_count = 0
       while retry_count < max_retries:
