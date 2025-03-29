@@ -7,39 +7,31 @@ services:
   #################################################
   
   grafana:
-    image: grafana/grafana:latest
-    container_name: dsi_grafana
+    image: grafana/grafana:11.6.0
+    container_name: vptwc_grafana
     ports:
-      - "3000:3000"
+      - "13000:3000"
     environment:
-      GF_SECURITY_ADMIN_USER: postgres
-      GF_SECURITY_ADMIN_PASSWORD: postgres
       GF_PROVISIONING_PATH: /etc/grafana/provisioning
-      GF_DATABASE_TYPE: postgres
-      GF_DATABASE_HOST: dsi_postgres:5432
-      GF_DATABASE_USER: postgres
-      GF_DATABASE_PASSWORD: postgres
-      GF_DATABASE_NAME: grafana
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
     networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.3
+      vptwc_custom_bridge:
+        ipv4_address: 10.10.10.10
     volumes:
-      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources
     restart: unless-stopped
-    depends_on:
-      - postgres
 
   prometheus:
-    image: prom/prometheus:latest
-    container_name: dsi_prometheus
+    image: prom/prometheus:v3.2.1
+    container_name: vptwc_prometheus
     networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.4
+      vptwc_custom_bridge:
+        ipv4_address: 10.10.10.11
     ports:
-      - "9090:9090"
+      - "19090:9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -48,178 +40,175 @@ services:
     restart: unless-stopped
 
   exporter_postgres:
-    image: quay.io/prometheuscommunity/postgres-exporter
-    container_name: dsi_exporter_postgres
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.17.1
+    container_name: vptwc_exporter_postgres
     networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.10
+      vptwc_custom_bridge:
+        ipv4_address: 10.10.10.12
     environment:
-      DATA_SOURCE_NAME: "postgresql://postgres:postgres@dsi_postgres:5432/?sslmode=disable"
-    ports:
-      - "9187:9187"
+      DATA_SOURCE_NAME: "postgresql://postgres:postgres@vptwc_postgres:5432/?sslmode=disable"
     depends_on:
       - postgres
     restart: unless-stopped
   
-  #################################################
-  ##################### Kafka #####################
-  #################################################
-
-  kafka_00:
-    image: confluentinc/cp-kafka:latest
-    container_name: dsi_kafka_00
-    networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.6
-    ports:
-      - "9092:9092"
-      - "9093:9093"
-      - "9099:9099"
-    volumes:
-      - dsi_kafka_data:/var/lib/kafka/data
-    environment:
-      # Node settings
-      KAFKA_BROKER_ID: 0
-      KAFKA_NODE_ID: 0
-      # Listeneres
-      ALLOW_PLAINTEXT_LISTENER: "yes"
-      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
-      KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
-      KAFKA_LISTENERS: "CONTROLLER://dsi_kafka_00:9093,INTERNAL://dsi_kafka_00:9094,LOCALHOST://172.20.0.6:9092"
-      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://dsi_kafka_00:9094,LOCALHOST://172.20.0.6:9092"
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,LOCALHOST:PLAINTEXT"
-      KAFKA_CONTROLLER_QUORUM_VOTERS: "0@dsi_kafka_00:9093"
-      KAFKA_ENABLE_KRAFT: "true"
-      # Topics
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
-      KAFKA_NUM_PARTITIONS: 1
-      # Metrics
-      KAFKA_JMX_PORT: "9099"
-      KAFKA_JMX_HOSTNAME: "dsi_kafka_00"
-      KAFKA_JMX_OPTS: "-Djava.rmi.server.hostname=dsi_kafka_00 -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.rmi.port=9099"
-      # Rest
-      KAFKA_PROCESS_ROLES: "broker,controller"
-      KAFKA_HEAP_OPTS: "-Xmx2g -Xms2g"
-      KAFKA_LOG_DIRS: "/var/lib/kafka/data"
-      CLUSTER_ID: n3KIrTWZSgCBNF1UZqvI8Q
-    restart: unless-stopped
-
-  init_kafka:
-    image: confluentinc/cp-kafka:latest
-    container_name: dsi_init_kafka
-    depends_on:
-      - kafka_00
-    networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.11
-    entrypoint: [ '/bin/sh', '-c' ]
-    command: |
-      "
-      # blocks until kafka is reachable
-      kafka-topics --bootstrap-server dsi_kafka_00:9094 --list
-
-      echo -e 'Creating kafka topics'
-      kafka-topics --bootstrap-server dsi_kafka_00:9094 --create --if-not-exists --replication-factor 1 --partitions 1 --topic topic_delays
-      kafka-topics --bootstrap-server dsi_kafka_00:9094 --create --if-not-exists --replication-factor 1 --partitions 1 --topic topic_weather
-
-      echo -e 'Successfully created the following topics:'
-      kafka-topics --bootstrap-server dsi_kafka_00:9094 --list
-      "
-
-  kafka_consumer:
-    build: 'python/.'
-    container_name: dsi_kafka_consumer
-    networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.14
-    environment:
-      MODE: 'consumer'
-      KAFKA_HOST: 'dsi_kafka_00:9094'
-      DB_CONNECTION : 'postgresql://postgres:postgres@dsi_postgres/dsi_project'
-    restart: unless-stopped
-    depends_on:
-      - kafka_00
-
-  kafka_producer_weather:
-    build: 'python/.'
-    container_name: dsi_kafka_producer_weather
-    networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.13
-    environment:
-      MODE: 'producer_weather'
-      KAFKA_HOST: 'dsi_kafka_00:9094'
-      KAFKA_TOPIC: 'topic_weather'
-      KAFKA_INTERRUPTION_TOPIC: 'topic_delays'
-      SOURCE_URL: 'https://archive-api.open-meteo.com/v1/archive'
-      DB_CONNECTION : 'postgresql://postgres:postgres@dsi_postgres/dsi_project'
-    restart: unless-stopped
-    depends_on:
-      - kafka_00
-
-  kafka_producer_delays:
-    build: 'python/.'
-    container_name: dsi_kafka_producer_delays
-    networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.12
-    environment:
-      MODE: 'producer_delays'
-      KAFKA_HOST: 'dsi_kafka_00:9094'
-      KAFKA_TOPIC: 'topic_delays'
-      SOURCE_URL: 'https://öffi.at/?archive=1&text=&types=2%2C3&page='
-      DB_CONNECTION : 'postgresql://postgres:postgres@dsi_postgres:5432/dsi_project'
-      TIMEOUT_SECONDS: '10'
-    restart: unless-stopped
-    depends_on:
-      - kafka_00
-      - kafka_producer_weather
-
-  #################################################
-  ################### Database ####################
-  #################################################
+  # #################################################
+  # ################### Database ####################
+  # #################################################
 
   postgres:
-    image: postgres:latest
-    container_name: dsi_postgres
+    image: postgres:17.4
+    container_name: vptwc_postgres
     networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.8
+      vptwc_custom_bridge:
+        ipv4_address: 10.10.10.13
     ports:
-      - "5432:5432"
+      - "5678:5432"
     volumes:
-      - dsi_postgres_data:/var/lib/postgresql/data
-      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - vptwc_postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
-      POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     restart: unless-stopped
 
-  postgres_setup_table:
+  postgres_setup_tables:
     build: 'python/.'
-    container_name: dsi_psotgres_setup_table
+    container_name: vptwc_psotgres_setup_tables
     networks:
-      dsi_custom_bridge:
-        ipv4_address: 172.20.0.15
+      vptwc_custom_bridge:
+        ipv4_address: 10.10.10.14
     environment:
       MODE: 'setup_db'
-      DB_CONNECTION : 'postgresql://postgres:postgres@dsi_postgres:5432/dsi_project'
-      DB_TABLE: 'stops'
+      DB_CONNECTION : 'postgresql://postgres:postgres@vptwc_postgres:5432/vptwc_project'
     depends_on:
       - postgres
 
+
+  # #################################################
+  # ##################### Kafka #####################
+  # #################################################
+
+  # kafka_00:
+  #   image: confluentinc/cp-kafka:latest
+  #   container_name: vptwc_kafka_00
+  #   networks:
+  #     vptwc_custom_bridge:
+  #       ipv4_address: 172.20.0.6
+  #   ports:
+  #     - "9092:9092"
+  #     - "9093:9093"
+  #     - "9099:9099"
+  #   volumes:
+  #     - vptwc_kafka_data:/var/lib/kafka/data
+  #   environment:
+  #     # Node settings
+  #     KAFKA_BROKER_ID: 0
+  #     KAFKA_NODE_ID: 0
+  #     # Listeneres
+  #     ALLOW_PLAINTEXT_LISTENER: "yes"
+  #     KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+  #     KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+  #     KAFKA_LISTENERS: "CONTROLLER://vptwc_kafka_00:9093,INTERNAL://vptwc_kafka_00:9094,LOCALHOST://172.20.0.6:9092"
+  #     KAFKA_ADVERTISED_LISTENERS: "INTERNAL://vptwc_kafka_00:9094,LOCALHOST://172.20.0.6:9092"
+  #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,LOCALHOST:PLAINTEXT"
+  #     KAFKA_CONTROLLER_QUORUM_VOTERS: "0@vptwc_kafka_00:9093"
+  #     KAFKA_ENABLE_KRAFT: "true"
+  #     # Topics
+  #     KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+  #     KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+  #     KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+  #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  #     KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+  #     KAFKA_NUM_PARTITIONS: 1
+  #     # Metrics
+  #     KAFKA_JMX_PORT: "9099"
+  #     KAFKA_JMX_HOSTNAME: "vptwc_kafka_00"
+  #     KAFKA_JMX_OPTS: "-Djava.rmi.server.hostname=vptwc_kafka_00 -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.rmi.port=9099"
+  #     # Rest
+  #     KAFKA_PROCESS_ROLES: "broker,controller"
+  #     KAFKA_HEAP_OPTS: "-Xmx2g -Xms2g"
+  #     KAFKA_LOG_DIRS: "/var/lib/kafka/data"
+  #     CLUSTER_ID: n3KIrTWZSgCBNF1UZqvI8Q
+  #   restart: unless-stopped
+
+  # init_kafka:
+  #   image: confluentinc/cp-kafka:latest
+  #   container_name: vptwc_init_kafka
+  #   depends_on:
+  #     - kafka_00
+  #   networks:
+  #     vptwc_custom_bridge:
+  #       ipv4_address: 172.20.0.11
+  #   entrypoint: [ '/bin/sh', '-c' ]
+  #   command: |
+  #     "
+  #     # blocks until kafka is reachable
+  #     kafka-topics --bootstrap-server vptwc_kafka_00:9094 --list
+
+  #     echo -e 'Creating kafka topics'
+  #     kafka-topics --bootstrap-server vptwc_kafka_00:9094 --create --if-not-exists --replication-factor 1 --partitions 1 --topic topic_delays
+  #     kafka-topics --bootstrap-server vptwc_kafka_00:9094 --create --if-not-exists --replication-factor 1 --partitions 1 --topic topic_weather
+
+  #     echo -e 'Successfully created the following topics:'
+  #     kafka-topics --bootstrap-server vptwc_kafka_00:9094 --list
+  #     "
+
+  # kafka_consumer:
+  #   build: 'python/.'
+  #   container_name: vptwc_kafka_consumer
+  #   networks:
+  #     vptwc_custom_bridge:
+  #       ipv4_address: 172.20.0.14
+  #   environment:
+  #     MODE: 'consumer'
+  #     KAFKA_HOST: 'vptwc_kafka_00:9094'
+  #     DB_CONNECTION : 'postgresql://postgres:postgres@vptwc_postgres/vptwc_project'
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - kafka_00
+
+  # kafka_producer_weather:
+  #   build: 'python/.'
+  #   container_name: vptwc_kafka_producer_weather
+  #   networks:
+  #     vptwc_custom_bridge:
+  #       ipv4_address: 172.20.0.13
+  #   environment:
+  #     MODE: 'producer_weather'
+  #     KAFKA_HOST: 'vptwc_kafka_00:9094'
+  #     KAFKA_TOPIC: 'topic_weather'
+  #     KAFKA_INTERRUPTION_TOPIC: 'topic_delays'
+  #     SOURCE_URL: 'https://archive-api.open-meteo.com/v1/archive'
+  #     DB_CONNECTION : 'postgresql://postgres:postgres@vptwc_postgres/vptwc_project'
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - kafka_00
+
+  # kafka_producer_delays:
+  #   build: 'python/.'
+  #   container_name: vptwc_kafka_producer_delays
+  #   networks:
+  #     vptwc_custom_bridge:
+  #       ipv4_address: 172.20.0.12
+  #   environment:
+  #     MODE: 'producer_delays'
+  #     KAFKA_HOST: 'vptwc_kafka_00:9094'
+  #     KAFKA_TOPIC: 'topic_delays'
+  #     SOURCE_URL: 'https://öffi.at/?archive=1&text=&types=2%2C3&page='
+  #     DB_CONNECTION : 'postgresql://postgres:postgres@vptwc_postgres:5432/vptwc_project'
+  #     TIMEOUT_SECONDS: '10'
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - kafka_00
+  #     - kafka_producer_weather
+
 volumes:
-  dsi_kafka_data:
-  dsi_postgres_data:
+  vptwc_postgres_data:
+#   vptwc_kafka_data:
 
 networks:
-  dsi_custom_bridge:
+  vptwc_custom_bridge:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 10.10.10.0/24

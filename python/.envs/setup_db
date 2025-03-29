@@ -1,0 +1,2 @@
+export MODE="setup_db"
+export DB_CONNECTION="postgresql://postgres:postgres@127.0.0.1:5678/vptwc_project"

@@ -1,5 +1,5 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, Engine
+from sqlalchemy.orm import sessionmaker, Session
 import logging
 
 class Database:
@@ -14,18 +14,18 @@ class Database:
     
     if cls._instance is None and db_url is not None:
       cls._instance = super(Database, cls).__new__(cls)
-      cls._instance.engine = create_engine(db_url)
+      cls._instance.engine = create_engine(db_url, echo=False, connect_args={"connect_timeout": 10})
       cls._instance.Session = sessionmaker(bind=cls._instance.engine)
     return cls._instance
 
   @classmethod
-  def get_engine(cls):
+  def get_engine(cls) -> Engine:
     if cls._instance is None:
       raise Exception("Database instance not initialized")
     return cls._instance.engine
 
   @classmethod
-  def get_session(cls):
+  def get_session(cls) -> Session:
     if cls._instance is None:
       raise Exception("Database instance not initialized")
     return cls._instance.Session()
