@@ -1,8 +1,8 @@
-# Data Science Infrastructure Project
-By Deleja-Hotko Julian and Topor Karol
+# Correlating Vienna public transport disruptions with weather conditions
+This project explores the relationship between public transport disruptions and weather conditions in Vienna, using docker to setup a production like event based data pipeline for gathering, cleaning, transforming and visualizing data. 
 
-## Project Overview
-This project explores the relationship between weather patterns and public transport disruptions in Vienna, utilizing Grafana for data visualization.
+## Project Structure
+- 
 
 ## Infrastructure
 

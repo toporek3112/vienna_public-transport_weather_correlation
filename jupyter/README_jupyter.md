@@ -1,5 +1,5 @@
 # Jupyter Notebooks
-These jupyter Notebooks do the same things as some of the docker containers, but as executable scripts.
+These jupyter Notebooks serve for data analysy and testing befor writing the required python script which are supposed to run in docker containers. 
 The scripts still need a working kafka instance and Postgres database to function (and visualization still requires grafana), but are otheriwse self-contained.
 
 ## webscraper:
