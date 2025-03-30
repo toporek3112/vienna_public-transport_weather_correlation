@@ -1,0 +1,6 @@
+export MODE="producer_weather"
+export KAFKA_HOST="localhost:9092"
+export KAFKA_TOPIC="topic_weather"
+export KAFKA_INTERRUPTION_TOPIC="topic_delays"
+export SOURCE_URL="https://archive-api.open-meteo.com/v1/archive"
+export DB_CONNECTION="postgresql://postgres:postgres@localhost:5678/vptwc_project"
