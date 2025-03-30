@@ -5,14 +5,29 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python Debugger: Current File with Arguments",
+      "name": "Debug Mode: setup_database",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/python/entry.py",
+      "program": "${workspaceFolder}/python/main.py",
       "console": "integratedTerminal",
       "env": {
         "MODE": "setup_db",
-        "DB_CONNECTION": "postgresql://postgres:postgres@172.0.0.1:5432/vptwc_project"
+        "DB_CONNECTION": "postgresql://postgres:postgres@localhost:5678/vptwc_project"
+      }
+    },
+    {
+      "name": "Debug Mode: producer_delays",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/python/main.py",
+      "console": "integratedTerminal",
+      "env": {
+        "MODE": "producer_delays",
+        "KAFKA_HOST": "localhost:9093",
+        "KAFKA_TOPIC": "topic_delays",
+        "SOURCE_URL": "https://öffi.at/?archive=1&text=&types=2%2C3&page=",
+        "DB_CONNECTION" : "postgresql://postgres:postgres@localhost:5678/vptwc_project",
+        "TIMEOUT_SECONDS": "10"
       }
     }
   ]

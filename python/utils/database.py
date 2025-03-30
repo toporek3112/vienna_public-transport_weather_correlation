@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, Engine
 from sqlalchemy.orm import sessionmaker, Session
 import logging
-
+import time
 class Database:
   _instance = None
 
@@ -11,10 +11,11 @@ class Database:
     
     logger.info('***** Initializing Database *****')
     logger.info(f'Connection string: {db_url}')
+    time.sleep(5)
     
     if cls._instance is None and db_url is not None:
       cls._instance = super(Database, cls).__new__(cls)
-      cls._instance.engine = create_engine(db_url, echo=False, connect_args={"connect_timeout": 10})
+      cls._instance.engine = create_engine(db_url, echo=False, pool_pre_ping=True, connect_args={"connect_timeout": 10})
       cls._instance.Session = sessionmaker(bind=cls._instance.engine)
     return cls._instance
 
