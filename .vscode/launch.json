@@ -29,6 +29,17 @@
         "DB_CONNECTION" : "postgresql://postgres:postgres@localhost:5678/vptwc_project",
         "TIMEOUT_SECONDS": "10"
       }
+    },
+    {
+      "name": "Debug Mode: setup_db",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/python/main.py",
+      "console": "integratedTerminal",
+      "env": {
+        "MODE": "setup_db",
+        "DB_CONNECTION" : "postgresql://postgres:postgres@localhost:5678/vptwc_project",
+      }
     }
   ]
 }
