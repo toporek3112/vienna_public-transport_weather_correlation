@@ -8,7 +8,6 @@ from utils.database import Database
 
 class SetupDB():
   def __init__(self):
-    logging.basicConfig(level=logging.INFO)
     self.logger = logging.getLogger(__name__)
     self.stops_url = 'https://www.wienerlinien.at/ogd_realtime/doku/ogd/gtfs/stops.txt'
     self.stops_file = 'data/stops.txt'

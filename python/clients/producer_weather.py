@@ -14,7 +14,6 @@ import logging
 class ProducerWeather():
     def __init__(self):
       # Inizialize logger
-      logging.basicConfig(level=logging.DEBUG)
       self.logger = logging.getLogger(__name__)
 
       self.source_url = os.getenv('SOURCE_URL')

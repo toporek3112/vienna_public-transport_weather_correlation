@@ -50,89 +50,14 @@
               }
             ]
           },
-          "unit": "none"
+          "unit": "short"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 11,
+        "w": 11,
         "x": 0,
-        "y": 1
-      },
-      "id": 5,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "11.6.0",
-      "targets": [
-        {
-          "datasource": "Postgres-Delays",
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT\r\n   COUNT(*) as disruption_count\r\n FROM\r\n   delays",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        }
-      ],
-      "title": "Total Disruptions",
-      "transparent": true,
-      "type": "stat"
-    },
-    {
-      "datasource": "Postgres-Delays",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
         "y": 1
       },
       "id": 6,
@@ -181,7 +106,7 @@
           }
         }
       ],
-      "title": "Total Disruptions in selected TImeframe",
+      "title": "Total Disruptions From ${__from:date:YYYY-MM-DD HH\\:mm\\:ss} to ${__to:date:YYYY-MM-DD HH\\:mm\\:ss}",
       "transparent": true,
       "type": "stat"
     },
@@ -193,351 +118,50 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
           },
           "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
           },
           "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
+          "unit": "short"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 11,
-        "w": 6,
-        "x": 0,
-        "y": 9
-      },
-      "id": 9,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "enablePagination": true,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true
-      },
-      "pluginVersion": "11.6.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "PFAE897580C4E86CD"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT\r\n  station_name AS \"Station\",\r\n  COUNT(*) AS \"Disruptions\"\r\nFROM\r\n  (SELECT jsonb_array_elements_text(stations) AS station_name FROM delays) AS subquery\r\nGROUP BY\r\n  station_name\r\nORDER BY\r\n  \"Disruptions\" DESC;\r\n",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        }
-      ],
-      "title": "Stations with all time disruption count",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "PFAE897580C4E86CD"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Disruption reason"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 369
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Count"
-            },
-            "properties": [
-              {
-                "id": "custom.minWidth",
-                "value": 50
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 6,
-        "x": 6,
-        "y": 9
-      },
-      "id": 11,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "enablePagination": true,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": []
-      },
-      "pluginVersion": "11.6.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "PFAE897580C4E86CD"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT\r\n  title as \"Disruption reason\",\r\n  count(*) as \"Count\"\r\nFROM\r\n  delays \r\nGROUP BY\r\n  title\r\nORDER BY\r\n  count(*) DESC;\r\n",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        }
-      ],
-      "title": "All time resons for disruptions",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "PFAE897580C4E86CD"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 6,
-        "x": 12,
-        "y": 9
-      },
-      "id": 10,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "enablePagination": true,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true
-      },
-      "pluginVersion": "11.6.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "PFAE897580C4E86CD"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT\r\n  station_name AS \"Station\",\r\n  COUNT(*) AS \"Disruptions\"\r\nFROM\r\n  (SELECT jsonb_array_elements_text(stations) AS station_name FROM delays WHERE $__timeFilter(time_start)) AS subquery\r\nGROUP BY\r\n  station_name\r\nORDER BY\r\n  \"Disruptions\" DESC;\r\n",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        }
-      ],
-      "title": "Stations with disruption count within selected timeframe",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "PFAE897580C4E86CD"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Disruption reason"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 348
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 6,
-        "x": 18,
-        "y": 9
+        "w": 13,
+        "x": 11,
+        "y": 1
       },
       "id": 12,
       "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "enablePagination": true,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "percent",
+            "value"
+          ]
         },
-        "showHeader": true,
-        "sortBy": []
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "none",
+          "sort": "none"
+        }
       },
       "pluginVersion": "11.6.0",
       "targets": [
@@ -549,7 +173,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  title as \"Disruption reason\",\r\n  count(*) as \"Count\"\r\nFROM\r\n  delays\r\nWHERE \r\n  $__timeFilter(delays.time_start) \r\nGROUP BY\r\n  title\r\nORDER BY\r\n  count(*) DESC;\r\n",
+          "rawSql": "SELECT\r\n  title as \"Disruption reason\",\r\n  count(*) as \"Count\"\r\nFROM\r\n  delays\r\nWHERE \r\n  $__timeFilter(delays.time_start) \r\nGROUP BY\r\n  title\r\nORDER BY\r\n  count(*) DESC\r\nLIMIT 10;\r\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -570,8 +194,122 @@
           }
         }
       ],
-      "title": "Resons for disruptions in selected timeframe",
-      "type": "table"
+      "title": "Top 10 Reasons for diruptions From ${__from:date:YYYY-MM-DD HH\\:mm\\:ss} to ${__to:date:YYYY-MM-DD HH\\:mm\\:ss}",
+      "transparent": true,
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PFAE897580C4E86CD"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisGridShow": false,
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 75,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 10,
+      "options": {
+        "barRadius": 0.3,
+        "barWidth": 0.9,
+        "fullHighlight": true,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "always",
+        "stacking": "none",
+        "text": {
+          "valueSize": 10
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "Station",
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "PFAE897580C4E86CD"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "-- Wrap the top 10 query in a subquery\r\nSELECT * FROM (\r\n  SELECT\r\n    station_name AS \"Station\",\r\n    COUNT(*) AS \"Disruptions\"\r\n  FROM (\r\n    SELECT jsonb_array_elements_text(stations) AS station_name\r\n    FROM delays\r\n    WHERE $__timeFilter(time_start)\r\n  ) AS subquery\r\n  GROUP BY station_name\r\n  ORDER BY \"Disruptions\" DESC\r\n  LIMIT 10\r\n) AS top_stations\r\n\r\nUNION ALL\r\n\r\n-- Mean row\r\nSELECT\r\n  'mean' AS \"Station\",\r\n  AVG(disruption_count)::float AS \"Disruptions\"\r\nFROM (\r\n  SELECT\r\n    jsonb_array_elements_text(stations) AS station_name,\r\n    COUNT(*) AS disruption_count\r\n  FROM delays\r\n  WHERE $__timeFilter(time_start)\r\n  GROUP BY station_name\r\n) AS station_counts;\r\n",
+          "refId": "B",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Top 10 stations by disruptions count From ${__from:date:YYYY-MM-DD HH\\:mm\\:ss} to ${__to:date:YYYY-MM-DD HH\\:mm\\:ss}",
+      "type": "barchart"
     },
     {
       "collapsed": false,
@@ -579,7 +317,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 21
       },
       "id": 7,
       "panels": [],
@@ -599,7 +337,7 @@
             "axisColorMode": "text",
             "axisGridShow": true,
             "axisLabel": "",
-            "axisPlacement": "auto",
+            "axisPlacement": "left",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
@@ -615,8 +353,7 @@
             "lineWidth": 0,
             "pointSize": 5,
             "scaleDistribution": {
-              "log": 2,
-              "type": "symlog"
+              "type": "linear"
             },
             "showPoints": "never",
             "spanNulls": false,
@@ -634,13 +371,10 @@
             "steps": [
               {
                 "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
               }
             ]
-          }
+          },
+          "unit": "short"
         },
         "overrides": [
           {
@@ -688,7 +422,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 22
       },
       "id": 4,
       "options": {
@@ -702,6 +436,9 @@
           "placement": "right",
           "showLegend": true
         },
+        "timezone": [
+          "browser"
+        ],
         "tooltip": {
           "hideZeros": false,
           "mode": "multi",
@@ -833,7 +570,7 @@
                   {
                     "targetBlank": true,
                     "title": "Go to Station",
-                    "url": "http://localhost:3000/d/efe5587a-2451-41a4-aaaa-15bd30f2904f/vienna-public-transport-station-overview?orgId=1&var-Station=${__value.raw}&from=${__from}&to=${__to}\n"
+                    "url": "/d/efe5587a-2451-41a4-aaaa-15bd30f2904f/vienna-public-transport-station-overview?orgId=1&var-Station=${__value.raw}&from=${__from}&to=${__to}\n"
                   }
                 ]
               }
@@ -845,7 +582,7 @@
         "h": 17,
         "w": 12,
         "x": 0,
-        "y": 33
+        "y": 34
       },
       "id": 2,
       "options": {
@@ -920,8 +657,8 @@
           },
           {
             "config": {
-              "blur": 40,
-              "radius": 30,
+              "blur": 14,
+              "radius": 15,
               "weight": {
                 "field": "Delays",
                 "fixed": 1,
@@ -937,7 +674,7 @@
               "mode": "auto"
             },
             "name": "station",
-            "opacity": 0.8,
+            "opacity": 0.6,
             "tooltip": true,
             "type": "heatmap"
           },
@@ -1134,48 +871,22 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Title"
+              "options": "Link"
             },
             "properties": [
               {
-                "id": "custom.width",
-                "value": 295
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Behoben"
-            },
-            "properties": [
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "details ",
+                    "url": "https://öffi.at/?id=${__data.fields.Link}"
+                  }
+                ]
+              },
               {
                 "id": "custom.width",
-                "value": 97
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Lines"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 120
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Stations"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 316
+                "value": 107
               }
             ]
           },
@@ -1187,7 +898,31 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 172
+                "value": 161
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Lines"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 77
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Behoben"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 87
               }
             ]
           }
@@ -1197,7 +932,7 @@
         "h": 17,
         "w": 12,
         "x": 12,
-        "y": 33
+        "y": 34
       },
       "id": 3,
       "options": {
@@ -1212,7 +947,12 @@
           "show": false
         },
         "showHeader": true,
-        "sortBy": []
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Time Start"
+          }
+        ]
       },
       "pluginVersion": "11.6.0",
       "targets": [
@@ -1221,7 +961,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT time_start_original as \"Time Start\", title as \"Title\", behoben as \"Behoben\", lines as \"Lines\", stations as \"Stations\" FROM delays WHERE $__timeFilter(time_start) order by time_start_original desc LIMIT 1000;",
+          "rawSql": "SELECT\r\n  time_start_original as \"Time Start\",\r\n  id_delays as \"Link\",\r\n  title as \"Title\",\r\n  behoben as \"Behoben\",\r\n  lines as \"Lines\",\r\n  stations as \"Stations\"\r\nFROM\r\n  delays\r\nWHERE\r\n  $__timeFilter(time_start)\r\norder by\r\n  time_start_original desc\r\nLIMIT\r\n  1000;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1298,8 +1038,8 @@
       {
         "allowCustomValue": false,
         "current": {
-          "text": "WLB",
-          "value": "WLB"
+          "text": "1",
+          "value": "1"
         },
         "datasource": {
           "type": "grafana-postgresql-datasource",
@@ -1317,12 +1057,12 @@
     ]
   },
   "time": {
-    "from": "now-5y",
-    "to": "now"
+    "from": "2024-06-16T22:00:00.000Z",
+    "to": "2024-06-30T21:59:59.000Z"
   },
   "timepicker": {},
   "timezone": "",
   "title": "VIenna public transport Delays",
   "uid": "ad4cc776-a1dc-47aa-b1ef-6986a1fd04c3",
-  "version": 1
+  "version": 4
 }

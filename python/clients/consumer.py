@@ -15,12 +15,10 @@ Base = declarative_base()
 class Consumer:
   def __init__(self):
     # Configure logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     self.logger = logging.getLogger(__name__)
-    
     self.logger.info("Initializing Consumer")
 
-    kafka_host = os.getenv('KAFKA_HOST')
+    kafka_host = os.getenv('KAFKA_HOST', 'vptwc_kafka_00:9094')
 
     self.session = Database.get_session()
 

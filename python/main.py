@@ -4,11 +4,22 @@ from clients.producer_weather import ProducerWeather
 from clients.consumer import Consumer
 from clients.setup_db import SetupDB
 from utils.database import Database
+from pythonjsonlogger import jsonlogger
 import sys
 import logging
 
+log_handler = logging.StreamHandler(sys.stdout)
+formatter = jsonlogger.JsonFormatter('%(asctime)s %(name)s %(levelname)s %(filename)s %(lineno)d %(message)s')
+log_handler.setFormatter(formatter)
+
+logging.getLogger("kafka").setLevel(logging.WARNING)
+logging.basicConfig(
+  level=logging.INFO,
+  handlers=[log_handler],
+  force=True
+)
+
 def main():
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     logger = logging.getLogger(__name__)
     mode = os.getenv('MODE')
     db_url = os.getenv('DB_CONNECTION')

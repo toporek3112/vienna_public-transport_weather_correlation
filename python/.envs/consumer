@@ -1,0 +1,3 @@
+export MODE="consumer"
+export KAFKA_HOST="localhost:9092"
+export DB_CONNECTION="postgresql://postgres:postgres@localhost:5678/vptwc_project"

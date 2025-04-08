@@ -18,8 +18,8 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
+  "id": 3,
   "links": [],
-  "liveNow": false,
   "panels": [
     {
       "datasource": "Postgres-Delays",
@@ -41,8 +41,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -72,7 +71,41 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 131
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Link"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "details ",
+                    "url": "https://öffi.at/?id=${__data.fields.Link}"
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 86
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time Start"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 170
               }
             ]
           }
@@ -99,14 +132,14 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "10.2.0",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": "Postgres-Delays",
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  time_start_original as \"Time Start\",\r\n  title as \"Title\",\r\n  behoben as \"Behoben\",\r\n  lines as \"Lines\",\r\n  stations as \"Stations\"\r\nFROM\r\n  delays\r\nWHERE\r\n  $__timeFilter(time_start)\r\n  AND ('${Station:raw}') = ANY (SELECT jsonb_array_elements_text(stations));\r\n",
+          "rawSql": "SELECT\r\n  time_start_original as \"Time Start\",\r\n  id_delays as \"Link\",\r\n  title as \"Title\",\r\n  behoben as \"Behoben\",\r\n  lines as \"Lines\",\r\n  stations as \"Stations\"\r\nFROM\r\n  delays\r\nWHERE\r\n  $__timeFilter(time_start)\r\n  AND ('${Station:raw}') = ANY (SELECT jsonb_array_elements_text(stations));\r\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -142,8 +175,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -166,6 +198,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -173,9 +206,11 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.0",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": "Postgres-Delays",
@@ -218,8 +253,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -242,6 +276,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -249,9 +284,11 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.0",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": "Postgres-Delays",
@@ -297,6 +334,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 20,
             "gradientMode": "none",
@@ -327,8 +365,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -371,10 +408,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": "Postgres-Delays",
@@ -433,45 +472,41 @@
       "type": "timeseries"
     }
   ],
-  "refresh": false,
-  "schemaVersion": 38,
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": [
       {
         "current": {
-          "selected": false,
-          "text": "Schottentor",
-          "value": "Schottentor"
+          "text": "Oper/Karlsplatz U",
+          "value": "Oper/Karlsplatz U"
         },
         "datasource": {
           "type": "postgres",
           "uid": "PFAE897580C4E86CD"
         },
         "definition": "select distinct name from stops",
-        "hide": 0,
         "includeAll": false,
         "label": "Station",
-        "multi": false,
         "name": "Station",
         "options": [],
         "query": "select distinct name from stops",
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
         "sort": 1,
         "type": "query"
       }
     ]
   },
   "time": {
-    "from": "2021-10-12T12:42:48.664Z",
-    "to": "2021-10-26T11:03:01.361Z"
+    "from": "2024-06-16T22:00:00.000Z",
+    "to": "2024-06-30T21:59:59.000Z"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Vienna Public Transport - Station Overview",
   "uid": "efe5587a-2451-41a4-aaaa-15bd30f2904f",
-  "version": 1,
-  "weekStart": ""
+  "version": 1
 }

@@ -6,7 +6,6 @@ class Database:
   _instance = None
 
   def __new__(cls, db_url=None):
-    logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
     
     logger.info('***** Initializing Database *****')

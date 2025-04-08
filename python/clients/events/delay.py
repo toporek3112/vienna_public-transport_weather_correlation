@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy import Column, Integer, NUMERIC, String, DateTime, Boolean
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime, timedelta
@@ -20,22 +20,23 @@ class Delay(Base):
   time_start_original = Column(DateTime)
   time_start = Column(DateTime)
   time_end = Column(DateTime)
+  page = Column(String)
 
   def __init__(self, event):
-    event_json = json.loads(event)
-    start_str = event_json["start"]
-    end_str = event_json["end"]
+    start_str = event["start"]
+    end_str = event["end"]
     # Parse the timestamp strings to datetime objects
     start = datetime.strptime(start_str, '%d.%m.%Y %H:%M')
     end = datetime.strptime(end_str, '%d.%m.%Y %H:%M')
     
     self.time_start_original = start
     self.time_start, self.time_end = self.assign_hour([start, end])
-    self.id_delays = event_json.get("id", None)
-    self.title = event_json.get("title", None)
-    self.behoben = event_json.get("behoben", None)
-    self.lines = event_json.get("lines", [])
-    self.stations = event_json.get("stations", [])
+    self.id_delays = event["id"]
+    self.title = event["title"]
+    self.behoben = event["behoben"]
+    self.lines = event["lines"]
+    self.stations = event["stations"]
+    self.page = event["page"]
   
   # set time to the nearest full hour (better visualization)
   def assign_hour(self, datetimes):
@@ -49,4 +50,14 @@ class Delay(Base):
       rounded_datetimes.append(rounded_dt)
     return rounded_datetimes
   
-
+  def to_json(self):
+    return json.dumps({
+      "id": self.id_delays,
+      "title": self.title,
+      "behoben": self.behoben,
+      "lines": self.lines,
+      "stations": self.stations,
+      "start": self.time_start_original.strftime('%d.%m.%Y %H:%M'),
+      "end": self.time_end.strftime('%d.%m.%Y %H:%M'),
+      "page": self.page
+    })

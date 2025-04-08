@@ -1,7 +1,9 @@
+from clients.events.delay import Delay
 from utils.producer_delays_checkpoint import ProducerDelaysCheckpoint
 from kafka import KafkaProducer
 from bs4 import BeautifulSoup
 from datetime import datetime
+from typing import List
 import json
 import requests
 import sys
@@ -12,14 +14,12 @@ import logging
 
 class ProducerDelays:
   def __init__(self):
-    logging.basicConfig(level=logging.INFO)
     self.logger = logging.getLogger(__name__)
 
-    self.source_url = source_url = os.getenv('SOURCE_URL')
-    self.kafka_host = kafka_host = os.getenv('KAFKA_HOST')
-    self.kafka_topic = kafka_topic = os.getenv('KAFKA_TOPIC')
-    self.timeout = int(os.getenv('TIMEOUT_SECONDS'))
-
+    self.source_url = source_url = os.getenv('SOURCE_URL', 'https://öffi.at/?archive=1&text=&types=2%2C3&page=')
+    self.kafka_host = kafka_host = os.getenv('KAFKA_HOST', 'vptwc_kafka_00:9094')
+    self.kafka_topic = kafka_topic = os.getenv('KAFKA_TOPIC', 'topic_delays')
+    self.scrape_interval = int(os.getenv('SCRAPE_INTERVAL_SECONDS', 10))
     self.db = ProducerDelaysCheckpoint()
 
     # Retry mechanism for Kafka connection
@@ -63,61 +63,61 @@ class ProducerDelays:
     number_of_pages = int(soup.find(string = re.compile(r'Aktuelle Seite: \d+/\d+')).split('/')[-1].strip()[:-1])
     return number_of_pages
 
-  def __scrape_delays(self):
+  def __scrape_delays(self) -> List[Delay]:
     if self.checkpoint.page == 0:
       self.checkpoint.page = self.__get_number_of_pages()
 
     self.logger.info(f'*** Scraping Page {self.checkpoint.page} ***')
 
-		# Get page source html
-    response = requests.get(f'{self.source_url}{self.checkpoint.page}')
-
-		# Parse html into beautifulSoup
+    scrape_url = f'{self.source_url}{self.checkpoint.page}'
+    response = requests.get(scrape_url)
     soup = BeautifulSoup(response.content, 'html.parser')
     interruption_list_raw = soup.find('ul', {'class': 'category-filter'})
 
     delays = []
 
-		# Build json
-    for delay in interruption_list_raw.findChildren('li', attrs={'class': 'disruption uk-padding-small'},recursive=False):
+    for delay in interruption_list_raw.findChildren('li', attrs={'class': 'disruption uk-padding-small'}, recursive=False):
       lines = []
       stations = []
-      
-      # Assign variables
+
       id = delay.attrs['id']
-      title = delay.find('h2',{'class':'disruption-title'}).text.split(':')[-1].strip()
-      content = delay.find('div',{'class':'uk-accordion-content'})
-      behoben = content.find('p') != None
+      title = delay.find('h2', {'class': 'disruption-title'}).text.strip()
+      content = delay.find('div', {'class': 'uk-accordion-content'})
+      behoben = content.find('p') is not None
 
       if len(content.find_all('ul')) > 0:
         for line in content.find_all('ul')[0].find_all('li'):
           lines.append(line.text)
-  
-        if len(content.find_all('ul')) > 1: # some delays do not have stations see page 3041 N24
+
+        if len(content.find_all('ul')) > 1:
           for station in content.find_all('ul')[1].find_all('li'):
             stations.append(station.text)
-      
+
       start = content.find_all(string=re.compile(r': \d{2}\.\d{2}\.\d{4} \d{2}:\d{2}'))[0].split(': ')[1]
       end = content.find_all(string=re.compile(r': \d{2}\.\d{2}\.\d{4} \d{2}:\d{2}'))[1].split(': ')[1]
-      
-			#combine into a single dict and send to kafka
+
       interruption = {
         'id': id,
-        'title':title,
+        'title': title,
         'behoben': behoben,
         'lines': lines,
         'stations': stations,
         'start': start,
-        'end': end
-        }
-    
-      delays.append(interruption)
-    # Overwrite old checkpoint
-    if self.checkpoint.page != 1: self.checkpoint.page = self.checkpoint.page - 1
-    self.checkpoint.behoben = delays[0]['behoben']
-    self.checkpoint.delay_id = delays[0]['id']
+        'end': end,
+        'page': f'{self.checkpoint.page}'
+      }
+
+      # Convert to JSON string and initialize Delay object
+      delays.append(Delay(interruption))
+
+    # Update checkpoint
+    if self.checkpoint.page != 1:
+      self.checkpoint.page -= 1
+
+    self.checkpoint.behoben = delays[0].behoben
+    self.checkpoint.delay_id = delays[0].id_delays
     self.checkpoint.last_scrape_time = datetime.fromtimestamp(time.time())
-    
+
     return delays
 
   def run(self):
@@ -130,15 +130,15 @@ class ProducerDelays:
       
 			  # Send each JSON object as a separate message
         for delay in delays:
-            logging.debug(delay)
-            self.producer.send(self.kafka_topic, value=delay)
+            self.logger.debug(delay)
+            self.producer.send(self.kafka_topic, value=delay.to_json())
         
         # Ensure all messages are sent
         self.producer.flush()
         
         # Save checkpoint to file
         self.db.save_checkpoint(self.checkpoint)
-        time.sleep(self.timeout)
+        time.sleep(self.scrape_interval)
     except Exception as e:
       self.logger.error(f"AN ERROR OCCURED: {e}")
     finally:
