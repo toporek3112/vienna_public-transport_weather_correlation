@@ -154,52 +154,52 @@ services:
       kafka-topics --bootstrap-server vptwc_kafka_00:9094 --list
       "
 
-  # kafka_consumer:
-  #   build: 'python/.'
-  #   container_name: vptwc_kafka_consumer
-  #   networks:
-  #     vptwc_custom_bridge:
-  #       ipv4_address: 10.10.10.17
-  #   environment:
-  #     MODE: 'consumer'
-  #     KAFKA_HOST: 'vptwc_kafka_00:9094'
-  #     DB_CONNECTION : 'postgresql://postgres:postgres@vptwc_postgres/vptwc_project'
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - kafka_00
+  kafka_consumer:
+    build: 'python/.'
+    container_name: vptwc_kafka_consumer
+    networks:
+      vptwc_custom_bridge:
+        ipv4_address: 10.10.10.17
+    environment:
+      MODE: 'consumer'
+      KAFKA_HOST: 'vptwc_kafka_00:9094'
+      DB_CONNECTION : 'postgresql://postgres:postgres@vptwc_postgres/vptwc_project'
+    restart: unless-stopped
+    depends_on:
+      - kafka_00
 
-  # kafka_producer_weather:
-  #   build: 'python/.'
-  #   container_name: vptwc_kafka_producer_weather
-  #   networks:
-  #     vptwc_custom_bridge:
-  #       ipv4_address: 10.10.10.18
-  #   environment:
-  #     MODE: 'producer_weather'
-  #     KAFKA_HOST: 'vptwc_kafka_00:9094'
-  #     KAFKA_TOPIC: 'topic_weather'
-  #     KAFKA_INTERRUPTION_TOPIC: 'topic_delays'
-  #     SOURCE_URL: 'https://archive-api.open-meteo.com/v1/archive'
-  #     DB_CONNECTION : 'postgresql://postgres:postgres@vptwc_postgres/vptwc_project'
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - kafka_00
+  kafka_producer_weather:
+    build: 'python/.'
+    container_name: vptwc_kafka_producer_weather
+    networks:
+      vptwc_custom_bridge:
+        ipv4_address: 10.10.10.18
+    environment:
+      MODE: 'producer_weather'
+      KAFKA_HOST: 'vptwc_kafka_00:9094'
+      KAFKA_TOPIC: 'topic_weather'
+      KAFKA_INTERRUPTION_TOPIC: 'topic_delays'
+      SOURCE_URL: 'https://archive-api.open-meteo.com/v1/archive'
+      DB_CONNECTION : 'postgresql://postgres:postgres@vptwc_postgres/vptwc_project'
+    restart: unless-stopped
+    depends_on:
+      - kafka_00
 
-  # kafka_producer_delays:
-  #   build: 'python/.'
-  #   container_name: vptwc_kafka_producer_delays
-  #   networks:
-  #     vptwc_custom_bridge:
-  #       ipv4_address: 10.10.10.19
-  #   environment:
-  #     MODE: 'producer_delays'
-  #     DB_CONNECTION : 'postgresql://postgres:postgres@vptwc_postgres:5432/vptwc_project'
-  #     SCRAPE_INTERVAL_SECONDS: '5'
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - postgres_setup_tables
-  #     - kafka_00
-  #     - kafka_producer_weather
+  kafka_producer_delays:
+    build: 'python/.'
+    container_name: vptwc_kafka_producer_delays
+    networks:
+      vptwc_custom_bridge:
+        ipv4_address: 10.10.10.19
+    environment:
+      MODE: 'producer_delays'
+      DB_CONNECTION : 'postgresql://postgres:postgres@vptwc_postgres:5432/vptwc_project'
+      SCRAPE_INTERVAL_SECONDS: '5'
+    restart: unless-stopped
+    depends_on:
+      - postgres_setup_tables
+      - kafka_00
+      - kafka_producer_weather
 
 volumes:
   vptwc_postgres_data:

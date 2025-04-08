@@ -5,12 +5,11 @@ from datetime import datetime, timedelta
 import json
 
 Base = declarative_base()
-
-# Define the delays table
 class Delay(Base):
   # Define table schema
   __tablename__ = 'delays'
   __table_args__ = {'schema': 'public'}
+
   id = Column(Integer, primary_key=True)
   id_delays = Column(Integer)
   title = Column(String)
@@ -20,25 +19,24 @@ class Delay(Base):
   time_start_original = Column(DateTime)
   time_start = Column(DateTime)
   time_end = Column(DateTime)
-  page = Column(NUMERIC)
+  page = Column(String)
 
   def __init__(self, event):
-    # start_str = event["start"]
-    # end_str = event["end"]
+    json_event = json.loads(event)
+    start_str = json_event["start"]
+    end_str = json_event["end"]
     # Parse the timestamp strings to datetime objects
-    # start = datetime.strptime(start_str, '%d.%m.%Y %H:%M')
-    # end = datetime.strptime(end_str, '%d.%m.%Y %H:%M')
-    # self.time_start_original = start
-    # self.time_start, self.time_end = self.assign_hour([start, end])
+    start = datetime.strptime(start_str, '%d.%m.%Y %H:%M')
+    end = datetime.strptime(end_str, '%d.%m.%Y %H:%M')
     
-    self.id_delays = event["id"]
-    self.title = event["title"]
-    self.behoben = event["behoben"]
-    self.lines = event["lines"]
-    self.stations = event["stations"]
-    self.time_start = event["start"]
-    self.time_end = event["end"]
-    self.page = event["page"]
+    self.time_start_original = start
+    self.time_start, self.time_end = self.__assign_hour([start, end])
+    self.id_delays = json_event["id"]
+    self.title = json_event["title"]
+    self.behoben = json_event["behoben"]
+    self.lines = json_event["lines"]
+    self.stations = json_event["stations"]
+    self.page = json_event["page"]
   
   # set time to the nearest full hour (better visualization)
   def __assign_hour(self, datetimes):
@@ -51,15 +49,3 @@ class Delay(Base):
           rounded_dt = dt.replace(minute=0) + timedelta(hours=1)
       rounded_datetimes.append(rounded_dt)
     return rounded_datetimes
-  
-  def to_json(self):
-    return json.dumps({
-      "id": self.id_delays,
-      "title": self.title,
-      "behoben": self.behoben,
-      "lines": self.lines,
-      "stations": self.stations,
-      "start": self.time_start_original.strftime('%d.%m.%Y %H:%M'),
-      "end": self.time_end.strftime('%d.%m.%Y %H:%M'),
-      "page": self.page
-    })

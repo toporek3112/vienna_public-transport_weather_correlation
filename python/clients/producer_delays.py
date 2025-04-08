@@ -63,7 +63,7 @@ class ProducerDelays:
     number_of_pages = int(soup.find(string = re.compile(r'Aktuelle Seite: \d+/\d+')).split('/')[-1].strip()[:-1])
     return number_of_pages
 
-  def __scrape_delays(self) -> List[Delay]:
+  def __scrape_delays(self):
     if self.checkpoint.page == 0:
       self.checkpoint.page = self.__get_number_of_pages()
 
@@ -108,14 +108,14 @@ class ProducerDelays:
         'page': f'{self.checkpoint.page}'
       }
 
-      delays.append(Delay(interruption))
+      delays.append(interruption)
 
     # Update checkpoint
     if self.checkpoint.page != 1:
       self.checkpoint.page -= 1
 
-    self.checkpoint.behoben = delays[0].behoben
-    self.checkpoint.delay_id = delays[0].id_delays
+    self.checkpoint.behoben = delays[0]['behoben']
+    self.checkpoint.delay_id = delays[0]['id']
     self.checkpoint.last_scrape_time = datetime.fromtimestamp(time.time())
 
     return delays
@@ -131,7 +131,7 @@ class ProducerDelays:
 			  # Send each JSON object as a separate message
         for delay in delays:
             self.logger.debug(delay)
-            self.producer.send(self.kafka_topic, value=delay.to_json())
+            self.producer.send(self.kafka_topic, value=delay)
         
         # Ensure all messages are sent
         self.producer.flush()
