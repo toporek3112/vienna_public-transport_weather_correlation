@@ -76,6 +76,7 @@ class ProducerDelays:
 
     delays = []
 
+    # get information from the soup
     for delay in interruption_list_raw.findChildren('li', attrs={'class': 'disruption uk-padding-small'}, recursive=False):
       lines = []
       stations = []
@@ -107,7 +108,6 @@ class ProducerDelays:
         'page': f'{self.checkpoint.page}'
       }
 
-      # Convert to JSON string and initialize Delay object
       delays.append(Delay(interruption))
 
     # Update checkpoint

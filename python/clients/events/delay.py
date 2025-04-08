@@ -20,26 +20,28 @@ class Delay(Base):
   time_start_original = Column(DateTime)
   time_start = Column(DateTime)
   time_end = Column(DateTime)
-  page = Column(String)
+  page = Column(NUMERIC)
 
   def __init__(self, event):
-    start_str = event["start"]
-    end_str = event["end"]
+    # start_str = event["start"]
+    # end_str = event["end"]
     # Parse the timestamp strings to datetime objects
-    start = datetime.strptime(start_str, '%d.%m.%Y %H:%M')
-    end = datetime.strptime(end_str, '%d.%m.%Y %H:%M')
+    # start = datetime.strptime(start_str, '%d.%m.%Y %H:%M')
+    # end = datetime.strptime(end_str, '%d.%m.%Y %H:%M')
+    # self.time_start_original = start
+    # self.time_start, self.time_end = self.assign_hour([start, end])
     
-    self.time_start_original = start
-    self.time_start, self.time_end = self.assign_hour([start, end])
     self.id_delays = event["id"]
     self.title = event["title"]
     self.behoben = event["behoben"]
     self.lines = event["lines"]
     self.stations = event["stations"]
+    self.time_start = event["start"]
+    self.time_end = event["end"]
     self.page = event["page"]
   
   # set time to the nearest full hour (better visualization)
-  def assign_hour(self, datetimes):
+  def __assign_hour(self, datetimes):
     rounded_datetimes = []
     for dt in datetimes:
       # Round down if minutes < 30, else round up
