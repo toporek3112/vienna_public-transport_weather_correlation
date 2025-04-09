@@ -143,5 +143,5 @@ checkpoint_delays.json
 checkpoint_weather.txt
 .cache.sqlite
 
-*.txt
 *.zip
+*.txt
