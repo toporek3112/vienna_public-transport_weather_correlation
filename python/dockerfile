@@ -1,16 +1,15 @@
 # Start with a Miniconda base image
-FROM conda/miniconda3
+FROM 311200/my_conda:0.0.1
 
+# Disable buffering console output for python 
+ENV PYTHONUNBUFFERED=1
+
+# Set the working directory in the container
 WORKDIR /usr/src/app
+
+# Copy the current directory contents and the environment.yml file into the container
 COPY . /usr/src/app
 
-RUN conda config --set always_yes yes \
-    && conda env create -f conda_env.yml \
-    && conda activate vptwc \
-    && conda clean -afy
-
-# Activate the environment and ensure it is used in the container
-ENV PATH="/opt/conda/envs/vptwc/bin:$PATH"
-
 # The code to run when the container is started
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "vptwc", "python", "-u", "main.py"]
+# Use 'conda run' to ensure the script runs in the 'development' environment
+ENTRYPOINT ["conda", "run", "-n", "development", "python", "-u", "main.py"]

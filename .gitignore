@@ -145,3 +145,4 @@ checkpoint_weather.txt
 
 *.zip
 *.txt
+*.sql
