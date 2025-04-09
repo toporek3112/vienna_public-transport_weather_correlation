@@ -1,8 +1,7 @@
-# Correlating Vienna public transport disruptions with weather conditions
-This project explores the relationship between public transport disruptions and weather conditions in Vienna, using docker to setup a production like event based data pipeline for gathering, cleaning, transforming and visualizing data. 
+# Smart City Insights: Correlating Wiener Linien Delays with Weather
+This project investigates the relationship between public transport disruptions and weather conditions in Vienna. It leverages a production-like, event-driven data pipeline — powered by Docker — to gather, clean, transform, and visualize data.
 
-## Project Structure
-- 
+While the current implementation uses a weather API and web scraping to collect delays, the core vision is to integrate on-site sensor data directly from transport stations for deeper and more accurate insights.
 
 ## Infrastructure
 
@@ -20,8 +19,12 @@ The architecture for data processing and visualization in this project includes 
 Each of these components plays a critical role in the pipeline from data collection to visualization.
 
 
-![Diagram](img/DSI_proj_infrastructure.png)
+![Diagram](media/flowchart.png)
 
+## Datasources
+- https://www.data.gv.at/katalog/dataset/wiener-linien-fahrplandaten-gtfs-wien#resources
+- https://öffi.at/?archive=1&text=&types=2%2C3&page=
+- https://open-meteo.com/
 
 ## Data Processing Pipeline
 
@@ -59,11 +62,10 @@ The entire pipeline is constructed to be both strong and flexible to support
 consistent data processing and enable comprehensive analysis.
 
 ## Grafana
-http://localhost:3000
 ### Overview of all stations in Vienna
-![image.png](./img/grafana_overview.png)
+![image.png](./media/grafana_overview.png)
 ### Overview of certain station
-![image.png](./img/grafana_station_overview.png)
+![image.png](./media/grafana_station_overview.png)
 
 # Running the setup
 ### Prerequisities
@@ -74,7 +76,8 @@ Ensure you have the following prerequisites installed:
 ## Start up
 
 ```{bash}
-docker-compose -f docker/docker-compose.yaml up -d
+docker-compose up -d
 ```
-he System will autmatically start up and run all collection and processing scripts on creation, no further interaction should be necessary.
-Note: To avoid rate limiting, Öffi.at data is scraped at a fairly slow pace, meaning the database and visualization will be almost empty if inspected immediatly after creation.
+The System will autmatically start up and run all collection and processing scripts on creation, no further interaction should be necessary.
+Note: To avoid rate limiting, Öffi.at data is scraped at a fairly slow pace, meaning the database and visualization will be almost empty if inspected immediatly after creation. After all containers have started and become ready you should be able to access grafana on http://localhost:13000
+> Password and Username are `postgres`
