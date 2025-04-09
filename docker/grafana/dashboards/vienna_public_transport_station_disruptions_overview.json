@@ -217,7 +217,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n   stops.name,\r\n   COUNT(*) as disruption_count\r\n FROM\r\n   delays\r\n CROSS JOIN\r\n   jsonb_array_elements_text(delays.stations) as station_name\r\n JOIN\r\n   stops ON station_name = stops.name\r\nWHERE stops.name = ('${Station:raw}')\r\nGROUP BY\r\n   stops.name",
+          "rawSql": "SELECT\r\n  s.stop_name,\r\n  COUNT(*) AS disruption_count\r\nFROM delays d\r\nCROSS JOIN jsonb_array_elements_text(d.stations) AS station_name\r\nJOIN stops s ON station_name = s.stop_name\r\nWHERE s.stop_name = '${Station:raw}'\r\nGROUP BY s.stop_name;\r\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -295,7 +295,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n   stops.name,\r\n   COUNT(*) as disruption_count\r\n FROM\r\n   delays\r\n CROSS JOIN\r\n   jsonb_array_elements_text(delays.stations) as station_name\r\n JOIN\r\n   stops ON station_name = stops.name\r\nWHERE stops.name = ('${Station:raw}') AND $__timeFilter(delays.time_start)\r\nGROUP BY\r\n   stops.name",
+          "rawSql": "SELECT\r\n  s.stop_name,\r\n  COUNT(*) AS disruption_count\r\nFROM delays d\r\nCROSS JOIN jsonb_array_elements_text(d.stations) AS station_name\r\nJOIN stops s ON station_name = s.stop_name\r\nWHERE s.stop_name = '${Station:raw}'\r\n  AND $__timeFilter(d.time_start)\r\nGROUP BY s.stop_name;\r\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -480,19 +480,19 @@
     "list": [
       {
         "current": {
-          "text": "Oper/Karlsplatz U",
-          "value": "Oper/Karlsplatz U"
+          "text": "Johnstraße",
+          "value": "Johnstraße"
         },
         "datasource": {
           "type": "postgres",
           "uid": "PFAE897580C4E86CD"
         },
-        "definition": "select distinct name from stops",
+        "definition": "SELECT DISTINCT stop_name FROM stops ORDER BY stop_name;\n",
         "includeAll": false,
         "label": "Station",
         "name": "Station",
         "options": [],
-        "query": "select distinct name from stops",
+        "query": "SELECT DISTINCT stop_name FROM stops ORDER BY stop_name;\n",
         "refresh": 1,
         "regex": "",
         "sort": 1,
@@ -501,8 +501,8 @@
     ]
   },
   "time": {
-    "from": "2024-06-16T22:00:00.000Z",
-    "to": "2024-06-30T21:59:59.000Z"
+    "from": "2024-06-14T12:25:01.511Z",
+    "to": "2025-03-16T18:06:06.627Z"
   },
   "timepicker": {},
   "timezone": "",
